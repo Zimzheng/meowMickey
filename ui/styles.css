@@ -1,0 +1,25 @@
+:root {
+  --sprite-w: 192px;
+  --sprite-h: 208px;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: var(--sprite-w);
+  height: var(--sprite-h);
+  background: transparent;
+  overflow: hidden;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+#sprite {
+  width: var(--sprite-w);
+  height: var(--sprite-h);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  /* background-image is set from JS once the sprite loads */
+}
