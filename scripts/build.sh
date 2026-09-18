@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/src-tauri"
 
