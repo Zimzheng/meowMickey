@@ -1,0 +1,25 @@
+# Rust
+src-tauri/target/
+**/*.rs.bk
+
+# Tauri build output
+src-tauri/gen/
+
+# Distribution outputs
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# SDD workspace (one dir per plan)
+.superpowers/
