@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MickeyCompanion",
+  "version": "1.0.0",
+  "identifier": "local.codex.mickey-companion",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "米奇桌宠",
+        "width": 192,
+        "height": 208,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visibleOnAllWorkspaces": true,
+        "focus": false,
+        "shadow": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri:; img-src 'self' tauri: data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "msi", "nsis"],
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/rules.json",
+      "resources/idle.png",
+      "resources/kneading.png",
+      "resources/sneezing.png"
+    ],
+    "category": "Entertainment",
+    "shortDescription": "Floating desktop cat",
+    "longDescription": "A transparent floating sprite that performs idle animations, sneezing, and kneading on a timer."
+  }
+}
