@@ -1,4 +1,5 @@
 pub mod config;
+pub mod timer;
 pub mod window_state;
 
 pub fn version() -> &'static str {
