@@ -200,8 +200,8 @@ fn locate_external_rules(_app: &AppHandle) -> PathBuf {
     #[cfg(target_os = "macos")]
     {
         // For packaged apps: exe is .../Foo.app/Contents/MacOS/Foo; we want .../ rules.json
-        // (i.e., parent of the .app bundle). Climb 3 levels: MacOS → Contents → .app → parent.
-        if let Some(parent) = exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+        // (i.e., parent of the .app bundle). Climb 4 levels: MacOS → Contents → .app → parent-of-app.
+        if let Some(parent) = exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()).and_then(|p| p.parent()) {
             return parent.join("rules.json");
         }
     }
