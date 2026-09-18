@@ -10,7 +10,9 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WindowEvent};
 
 const SPRITE_W: f64 = 192.0;
+#[allow(dead_code)] // reserved for future hit-testing of the sprite
 const SPRITE_H: f64 = 208.0;
+#[allow(dead_code)] // reserved for future click-vs-drag discrimination
 const DRAG_THRESHOLD: f64 = 3.0;
 
 pub struct AppState {
@@ -138,18 +140,16 @@ pub fn run() -> tauri::Result<()> {
                         let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
                         let mut watcher = notify::recommended_watcher(tx)?;
                         watcher.watch(&dir, RecursiveMode::NonRecursive)?;
-                        for ev in rx {
-                            if let Ok(event) = ev {
-                                let touched = event.paths.iter().any(|p| {
-                                    p.to_string_lossy() == watch_path_str
-                                });
-                                if touched {
-                                    let rules = {
-                                        let st = state.lock().unwrap();
-                                        load_rules_from_paths(&st.external_rules_path, &st.bundled_rules_path)
-                                    };
-                                    let _ = app.emit("rules_changed", rules);
-                                }
+                        for event in rx.into_iter().flatten() {
+                            let touched = event.paths.iter().any(|p| {
+                                p.to_string_lossy() == watch_path_str
+                            });
+                            if touched {
+                                let rules = {
+                                    let st = state.lock().unwrap();
+                                    load_rules_from_paths(&st.external_rules_path, &st.bundled_rules_path)
+                                };
+                                let _ = app.emit("rules_changed", rules);
                             }
                         }
                         Ok(())
@@ -297,8 +297,7 @@ fn get_rules(state: tauri::State<SharedState>) -> Rules {
     let st = state.lock().unwrap();
     // We don't store the parsed Rules on AppState (only inside the Scheduler),
     // so reload from disk to return the current truth.
-    let rules = load_rules_from_paths(&st.external_rules_path, &st.bundled_rules_path);
-    rules
+    load_rules_from_paths(&st.external_rules_path, &st.bundled_rules_path)
 }
 
 #[derive(Serialize, Clone, Copy)]

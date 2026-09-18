@@ -10,11 +10,12 @@ pub struct WindowPosition {
 }
 
 const SPRITE_WIDTH: f64 = 192.0;
+#[allow(dead_code)] // reserved for future bottom-edge offset calculation
 const SPRITE_HEIGHT: f64 = 208.0;
 const MARGIN_RIGHT: f64 = 35.0;
 const MARGIN_BOTTOM: f64 = 55.0;
 
-pub fn default_position(screen_width: f64, screen_height: f64) -> WindowPosition {
+pub fn default_position(screen_width: f64, _screen_height: f64) -> WindowPosition {
     WindowPosition {
         x: screen_width - SPRITE_WIDTH - MARGIN_RIGHT,
         y: MARGIN_BOTTOM,
