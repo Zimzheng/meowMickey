@@ -10,10 +10,6 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WindowEvent};
 
 const SPRITE_W: f64 = 192.0;
-#[allow(dead_code)] // reserved for future hit-testing of the sprite
-const SPRITE_H: f64 = 208.0;
-#[allow(dead_code)] // reserved for future click-vs-drag discrimination
-const DRAG_THRESHOLD: f64 = 3.0;
 
 pub struct AppState {
     pub scheduler: Scheduler,
@@ -201,6 +197,15 @@ pub fn run() -> tauri::Result<()> {
 fn locate_external_rules(_app: &AppHandle) -> PathBuf {
     // The external rules.json lives next to the executable (same convention as the Swift version).
     let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
+    #[cfg(target_os = "macos")]
+    {
+        // For packaged apps: exe is .../Foo.app/Contents/MacOS/Foo; we want .../ rules.json
+        // (i.e., parent of the .app bundle). Climb 3 levels: MacOS → Contents → .app → parent.
+        if let Some(parent) = exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+            return parent.join("rules.json");
+        }
+    }
+    // Dev mode, Windows, Linux: just next to the binary.
     exe.parent().map(|p| p.join("rules.json")).unwrap_or(PathBuf::from("rules.json"))
 }
 
