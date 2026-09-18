@@ -1,4 +1,5 @@
 pub mod config;
+pub mod window_state;
 
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
