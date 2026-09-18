@@ -1,3 +1,4 @@
+pub mod app;
 pub mod config;
 pub mod timer;
 pub mod window_state;
