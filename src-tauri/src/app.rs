@@ -52,11 +52,11 @@ pub fn run() -> tauri::Result<()> {
                 .expect("resolve app_data_dir");
             std::fs::create_dir_all(&data_dir).ok();
 
-            let external_rules = locate_external_rules(&app_handle);
             let bundled_rules = app_handle
                 .path()
                 .resolve("rules.json", tauri::path::BaseDirectory::Resource)
                 .unwrap_or_else(|_| data_dir.join("rules.json"));
+            let external_rules = locate_external_rules(&data_dir, &bundled_rules);
 
             let rules = load_rules_from_paths(&external_rules, &bundled_rules);
 
@@ -88,23 +88,35 @@ pub fn run() -> tauri::Result<()> {
 
             // Restore window position + size.
             if let Some(window) = app_handle.get_webview_window("main") {
-                let pos = saved_state.unwrap_or_else(|| {
-                        // Default: bottom-right of primary monitor.
-                        if let Some(monitor) = window.primary_monitor().ok().flatten() {
-                            let sf = monitor.size();
-                            WindowPosition {
-                                x: sf.width as f64 - SPRITE_W - 35.0,
-                                y: 55.0,
-                                scale: window_state::DEFAULT_SCALE,
-                            }
-                        } else {
-                            WindowPosition {
-                                x: 100.0,
-                                y: 100.0,
-                                scale: window_state::DEFAULT_SCALE,
-                            }
-                        }
+                let pos = if let Some(monitor) = window.primary_monitor().ok().flatten() {
+                    let monitor_pos = monitor.position();
+                    let monitor_size = monitor.size();
+                    let scale_factor = monitor.scale_factor();
+                    let candidate = saved_state.unwrap_or_else(|| {
+                        window_state::default_physical_position(
+                            monitor_pos.x,
+                            monitor_pos.y,
+                            monitor_size.width,
+                            monitor_size.height,
+                            scale_factor,
+                            initial_scale,
+                        )
                     });
+                    window_state::clamp_to_monitor(
+                        candidate,
+                        monitor_pos.x,
+                        monitor_pos.y,
+                        monitor_size.width,
+                        monitor_size.height,
+                        scale_factor,
+                    )
+                } else {
+                    saved_state.unwrap_or(WindowPosition {
+                        x: 100.0,
+                        y: 100.0,
+                        scale: initial_scale,
+                    })
+                };
                 let _ = window.set_position(PhysicalPosition::new(pos.x, pos.y));
                 let _ = window.set_size(LogicalSize::new(
                     SPRITE_W * initial_scale,
@@ -124,14 +136,16 @@ pub fn run() -> tauri::Result<()> {
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
-                        button: MouseButton::Right,
+                        button,
                         button_state: MouseButtonState::Up,
                         ..
                     } = event
                     {
-                        // Tauri 2.x removed `TrayIcon::menu()`, so we keep the
-                        // menu cached on AppState and pop it up from there.
-                        popup_tray_menu(tray.app_handle());
+                        match button {
+                            MouseButton::Right => popup_tray_menu(tray.app_handle()),
+                            MouseButton::Left => show_pet(tray.app_handle()),
+                            _ => {}
+                        }
                     }
                 })
                 .build(app)?;
@@ -140,6 +154,7 @@ pub fn run() -> tauri::Result<()> {
             // reload rules and emit `rules_changed` so the frontend can refresh.
             let app_handle_for_watcher = app_handle.clone();
             let state_for_watcher = state.clone();
+            let clock_for_watcher = clock.clone();
             let watch_path = {
                 let st = state_for_watcher.lock().unwrap();
                 st.external_rules_path.clone()
@@ -150,6 +165,7 @@ pub fn run() -> tauri::Result<()> {
                     use notify::{RecursiveMode, Watcher};
                     let app = app_handle_for_watcher.clone();
                     let state = state_for_watcher.clone();
+                    let clock = clock_for_watcher.clone();
                     let watch_path_str = watch_path.to_string_lossy().to_string();
                     let res = tauri::async_runtime::spawn_blocking(move || -> notify::Result<()> {
                         let (tx, rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
@@ -161,8 +177,13 @@ pub fn run() -> tauri::Result<()> {
                             });
                             if touched {
                                 let rules = {
-                                    let st = state.lock().unwrap();
-                                    load_rules_from_paths(&st.external_rules_path, &st.bundled_rules_path)
+                                    let mut st = state.lock().unwrap();
+                                    let rules = load_rules_from_paths(
+                                        &st.external_rules_path,
+                                        &st.bundled_rules_path,
+                                    );
+                                    st.scheduler.reload_rules(rules.clone(), clock.as_ref());
+                                    rules
                                 };
                                 let _ = app.emit("rules_changed", rules);
                             }
@@ -216,19 +237,45 @@ pub fn run() -> tauri::Result<()> {
         .run(tauri::generate_context!())
 }
 
-fn locate_external_rules(_app: &AppHandle) -> PathBuf {
-    // The external rules.json lives next to the executable (same convention as the Swift version).
+fn locate_external_rules(data_dir: &std::path::Path, bundled_rules: &std::path::Path) -> PathBuf {
+    // Portable builds keep rules.json beside the .app/executable. Installed builds
+    // use the writable per-user data directory.
     let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
-    #[cfg(target_os = "macos")]
-    {
-        // For packaged apps: exe is .../Foo.app/Contents/MacOS/Foo; we want .../ rules.json
-        // (i.e., parent of the .app bundle). Climb 4 levels: MacOS → Contents → .app → parent-of-app.
-        if let Some(parent) = exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()).and_then(|p| p.parent()) {
-            return parent.join("rules.json");
+    let beside_executable = {
+        #[cfg(target_os = "macos")]
+        {
+            // For packaged apps: exe is .../Foo.app/Contents/MacOS/Foo; we want .../ rules.json
+            // (i.e., parent of the .app bundle). Climb 4 levels: MacOS → Contents → .app → parent-of-app.
+            if let Some(parent) = exe
+                .parent()
+                .and_then(|p| p.parent())
+                .and_then(|p| p.parent())
+                .and_then(|p| p.parent())
+            {
+                parent.join("rules.json")
+            } else {
+                PathBuf::from("rules.json")
+            }
         }
+        #[cfg(not(target_os = "macos"))]
+        {
+            exe.parent()
+                .map(|p| p.join("rules.json"))
+                .unwrap_or(PathBuf::from("rules.json"))
+        }
+    };
+    if beside_executable.is_file() {
+        return beside_executable;
     }
-    // Dev mode, Windows, Linux: just next to the binary.
-    exe.parent().map(|p| p.join("rules.json")).unwrap_or(PathBuf::from("rules.json"))
+
+    let user_rules = data_dir.join("rules.json");
+    if !user_rules.exists() {
+        let initial = std::fs::read(bundled_rules).unwrap_or_else(|_| {
+            serde_json::to_vec_pretty(&Rules::default_rules()).unwrap_or_default()
+        });
+        let _ = std::fs::write(&user_rules, initial);
+    }
+    user_rules
 }
 
 fn build_tray_menu(
@@ -392,6 +439,12 @@ fn popup_tray_menu(app: &AppHandle) {
     // the raw window by label instead of the webview wrapper.
     if let Some(window) = app.get_window("main") {
         let _ = menu.popup(window);
+    }
+}
+
+fn show_pet(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
     }
 }
 

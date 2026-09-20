@@ -32,6 +32,43 @@ pub fn default_position(screen_width: f64, _screen_height: f64) -> WindowPositio
     }
 }
 
+pub fn default_physical_position(
+    monitor_x: i32,
+    monitor_y: i32,
+    monitor_width: u32,
+    _monitor_height: u32,
+    scale_factor: f64,
+    sprite_scale: f64,
+) -> WindowPosition {
+    WindowPosition {
+        x: monitor_x as f64 + monitor_width as f64
+            - (SPRITE_WIDTH * sprite_scale + MARGIN_RIGHT) * scale_factor,
+        y: monitor_y as f64 + MARGIN_BOTTOM * scale_factor,
+        scale: sprite_scale,
+    }
+}
+
+pub fn clamp_to_monitor(
+    position: WindowPosition,
+    monitor_x: i32,
+    monitor_y: i32,
+    monitor_width: u32,
+    monitor_height: u32,
+    scale_factor: f64,
+) -> WindowPosition {
+    let width = SPRITE_WIDTH * position.scale * scale_factor;
+    let height = SPRITE_HEIGHT * position.scale * scale_factor;
+    let min_x = monitor_x as f64;
+    let min_y = monitor_y as f64;
+    let max_x = (min_x + monitor_width as f64 - width).max(min_x);
+    let max_y = (min_y + monitor_height as f64 - height).max(min_y);
+    WindowPosition {
+        x: position.x.clamp(min_x, max_x),
+        y: position.y.clamp(min_y, max_y),
+        ..position
+    }
+}
+
 pub fn load(dir: &Path) -> Option<WindowPosition> {
     let path = dir.join("window.json");
     let data = fs::read_to_string(&path).ok()?;
@@ -114,5 +151,22 @@ mod tests {
         assert_eq!(loaded.x, 100.0);
         assert_eq!(loaded.y, 200.0);
         assert_eq!(loaded.scale, 1.0); // serde default
+    }
+
+    #[test]
+    fn physical_default_accounts_for_retina_scale_and_monitor_origin() {
+        let p = default_physical_position(100, 200, 2880, 1800, 2.0, 1.0);
+        assert_eq!(p.x, 100.0 + 2880.0 - (192.0 + 35.0) * 2.0);
+        assert_eq!(p.y, 200.0 + 55.0 * 2.0);
+    }
+
+    #[test]
+    fn saved_position_is_clamped_back_onto_the_monitor() {
+        let p = clamp_to_monitor(
+            WindowPosition { x: 5000.0, y: -500.0, scale: 2.0 },
+            0, 0, 1920, 1080, 1.0,
+        );
+        assert_eq!(p.x, 1920.0 - 384.0);
+        assert_eq!(p.y, 0.0);
     }
 }

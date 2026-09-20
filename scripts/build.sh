@@ -24,9 +24,15 @@ mkdir -p "$OUT"
 case "$PLATFORM" in
   macos)
     cp -R "target/release/bundle/macos/MickeyCompanion.app" "$OUT/"
-    cp "$ROOT/rules.json" "$OUT/MickeyCompanion.app/Contents/Resources/rules.json"
+    # Keep the editable rules beside the signed bundle. Never mutate the .app
+    # after Tauri has signed it.
+    cp "$ROOT/rules.json" "$OUT/rules.json"
     cp "$ROOT/启动米奇.command" "$OUT/启动米奇.command"
     chmod +x "$OUT/启动米奇.command"
+    # Tauri's local bundle can contain only a linker signature. Re-sign the
+    # complete copied bundle so CodeResources matches the final app contents.
+    # Release distribution can replace '-' with a Developer ID identity.
+    codesign --force --deep --sign - "$OUT/MickeyCompanion.app"
     ;;
   windows)
     if [ -d "target/release/bundle/msi" ]; then

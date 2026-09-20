@@ -47,7 +47,23 @@ impl Rules {
     }
 
     pub fn from_json(s: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(s)
+        serde_json::from_str::<Self>(s).map(Self::normalized)
+    }
+
+    pub fn normalized(mut self) -> Self {
+        self.sneeze_every_minutes = valid_interval(self.sneeze_every_minutes, 30.0);
+        self.knead_every_minutes = valid_interval(self.knead_every_minutes, 5.0);
+        self.single_click = Action::from_name(&self.single_click)
+            .filter(|action| *action != Action::Idle)
+            .unwrap_or(Action::Kneading)
+            .as_str()
+            .to_string();
+        self.double_click = Action::from_name(&self.double_click)
+            .filter(|action| *action != Action::Idle)
+            .unwrap_or(Action::Sneezing)
+            .as_str()
+            .to_string();
+        self
     }
 
     pub fn action_for_single_click(&self) -> Action {
@@ -56,6 +72,14 @@ impl Rules {
 
     pub fn action_for_double_click(&self) -> Action {
         Action::from_name(&self.double_click).unwrap_or(Action::Sneezing)
+    }
+}
+
+fn valid_interval(value: f64, fallback: f64) -> f64 {
+    if value.is_finite() {
+        value.max(1.0)
+    } else {
+        fallback
     }
 }
 
@@ -120,6 +144,16 @@ mod tests {
         };
         assert_eq!(r.action_for_single_click(), Action::Kneading);
         assert_eq!(r.action_for_double_click(), Action::Sneezing);
+    }
+
+    #[test]
+    fn parsing_normalizes_invalid_clicks_and_short_intervals() {
+        let json = r#"{"sneezeEveryMinutes": 0, "kneadEveryMinutes": -2, "singleClick": "unknown", "doubleClick": "idle"}"#;
+        let r = Rules::from_json(json).unwrap();
+        assert_eq!(r.sneeze_every_minutes, 1.0);
+        assert_eq!(r.knead_every_minutes, 1.0);
+        assert_eq!(r.single_click, "kneading");
+        assert_eq!(r.double_click, "sneezing");
     }
 
     #[test]

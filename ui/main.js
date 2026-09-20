@@ -44,11 +44,13 @@ async function loadInitialScale() {
 
 function triggerAction(action) {
   if (!action || action === 'idle') return;
-  sprite.setAction(action);
   if (invoke) {
     invoke('trigger_action', { action }).catch((e) => {
       console.warn('trigger_action failed', e);
     });
+  } else {
+    // Browser-only preview has no backend event bridge.
+    sprite.setAction(action);
   }
 }
 

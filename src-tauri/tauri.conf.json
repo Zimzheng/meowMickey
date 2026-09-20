@@ -29,10 +29,7 @@
     ],
     "security": {
       "csp": "default-src 'self' tauri:; img-src 'self' tauri: data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'",
-      "assetProtocol": {
-        "enable": true,
-        "scope": ["**"]
-      }
+      "assetProtocol": { "enable": false }
     }
   },
   "bundle": {
@@ -43,9 +40,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "resources/rules.json"
-    ],
+    "resources": {
+      "../rules.json": "rules.json"
+    },
     "category": "Entertainment",
     "shortDescription": "Floating desktop cat",
     "longDescription": "A transparent floating sprite that performs idle animations, sneezing, and kneading on a timer."

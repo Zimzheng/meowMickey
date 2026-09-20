@@ -1,6 +1,6 @@
 use crate::config::{Action, Rules};
-use std::sync::Mutex;
-use std::time::Duration;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 pub trait Clock: Send + Sync {
     fn now(&self) -> Duration;
@@ -10,14 +10,8 @@ pub struct SystemClock;
 
 impl Clock for SystemClock {
     fn now(&self) -> Duration {
-        // Use monotonic time. std::time::Instant is monotonic but can't be exported as a Duration from epoch;
-        // for production use we need the elapsed-since-start time. Using SystemTime is not monotonic.
-        // The pragmatic choice: track an epoch inside Scheduler using SystemClock::now as a Duration
-        // from UNIX_EPOCH is fine because we only compare within a single run.
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::ZERO)
+        static STARTED_AT: OnceLock<Instant> = OnceLock::new();
+        STARTED_AT.get_or_init(Instant::now).elapsed()
     }
 }
 
