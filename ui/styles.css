@@ -21,5 +21,9 @@ html, body {
   height: var(--sprite-h);
   background-repeat: no-repeat;
   background-position: 0 0;
+  /* The sprite sheet is 6 frames wide × 1 frame tall. Render the image at 6× the
+     div width so that one frame of the source = one div width. Then background-position
+     steps through the 6 frames correctly at any scale. */
+  background-size: 600% 100%;
   /* background-image is set from JS once the sprite loads */
 }

@@ -7,6 +7,8 @@
     "frontendDist": "../ui"
   },
   "app": {
+    "macOSPrivateApi": true,
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",
@@ -26,7 +28,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri:; img-src 'self' tauri: data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'"
+      "csp": "default-src 'self' tauri:; img-src 'self' tauri: data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
   },
   "bundle": {
@@ -38,10 +44,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "resources/rules.json",
-      "resources/idle.png",
-      "resources/kneading.png",
-      "resources/sneezing.png"
+      "resources/rules.json"
     ],
     "category": "Entertainment",
     "shortDescription": "Floating desktop cat",

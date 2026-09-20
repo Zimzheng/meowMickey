@@ -7,20 +7,17 @@ const FRAME_DURATIONS = {
   kneading: [0.18, 0.18, 0.18, 0.18, 0.18, 0.24],
 };
 
-const tauri = window.__TAURI__;
-const convertFileSrc = tauri?.core?.convertFileSrc || tauri?.convertFileSrc;
-
 function assetUrl(action) {
-  if (convertFileSrc) return convertFileSrc(`${action}.png`);
-  return `${action}.png`;
+  return `sprites/${action}.png`;
 }
 
 export class SpriteSheet {
-  constructor(element) {
+  constructor(element, scale = 1) {
     this.element = element;
     this.action = 'idle';
     this.frameIndex = 0;
     this.timerId = null;
+    this.scale = scale;
     this.urls = {
       idle: assetUrl('idle'),
       sneezing: assetUrl('sneezing'),
@@ -37,6 +34,11 @@ export class SpriteSheet {
     }
   }
 
+  setScale(scale) {
+    this.scale = scale;
+    this.render();
+  }
+
   setAction(action) {
     if (!FRAME_DURATIONS[action]) return;
     if (this.timerId !== null) {
@@ -51,7 +53,12 @@ export class SpriteSheet {
   }
 
   render() {
-    this.element.style.backgroundPosition = `-${this.frameIndex * SPRITE_W}px 0`;
+    // At scale > 1 the div is larger than the source sprite. background-size: 100% 100%
+    // (in CSS) scales the image to fill the div. background-position operates in
+    // element coordinates, so we offset by frameIndex * (sprite_width * scale) pixels
+    // to land on the right source frame.
+    const offset = -this.frameIndex * SPRITE_W * this.scale;
+    this.element.style.backgroundPosition = `${offset}px 0`;
   }
 
   scheduleNext() {

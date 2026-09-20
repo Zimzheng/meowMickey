@@ -5,63 +5,50 @@ const CLICK_DELAY_MS = 250;
 
 export function installMouseHandling(element, { onSingleClick, onDoubleClick, onRightClick }) {
   let dragStartClient = null;
-  let dragOrigin = null;
   let moved = false;
   let pendingSingleClick = null;
 
+  const dpr = window.devicePixelRatio || 1;
+
   element.addEventListener('mousedown', (event) => {
-    if (event.button !== 0) return; // left button only for drag
+    if (event.button !== 0) return;
     dragStartClient = { x: event.clientX, y: event.clientY };
     moved = false;
     if (invoke) {
-      invoke('start_drag').then((origin) => {
-        dragOrigin = origin;
-      }).catch(() => { dragOrigin = null; });
-    } else {
-      dragOrigin = { x: 0, y: 0 };
+      // Hand the drag off to AppKit — it handles all subsequent window movement
+      // directly, no IPC roundtrip per mousemove.
+      invoke('native_drag').catch(() => {});
     }
   });
 
   element.addEventListener('mousemove', (event) => {
     if (!dragStartClient) return;
-    const dx = event.clientX - dragStartClient.x;
-    const dy = event.clientY - dragStartClient.y;
-    if (!moved && Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD) {
+    // AppKit is already moving the window. We only track distance locally
+    // to disambiguate click vs drag — no IPC, no set_position here.
+    const dx = (event.clientX - dragStartClient.x) * dpr;
+    const dy = (event.clientY - dragStartClient.y) * dpr;
+    const dist = Math.abs(dx) + Math.abs(dy);
+    if (!moved && dist > DRAG_THRESHOLD) {
       moved = true;
-    }
-    if (moved && dragOrigin && invoke) {
-      invoke('update_drag', { x: dx, y: dy }).catch(() => {});
     }
   });
 
   element.addEventListener('mouseup', (event) => {
     if (event.button !== 0) return;
     const wasDragging = moved;
-    const wasClick = !moved;
     dragStartClient = null;
-    dragOrigin = null;
     moved = false;
-
     if (invoke) {
+      // Save the window's current position (whatever AppKit landed it at).
       invoke('end_drag').catch(() => {});
     }
-
     if (wasDragging) return;
-
     if (event.detail >= 2) {
-      // Double-click (browser detected via detail)
-      if (pendingSingleClick) {
-        clearTimeout(pendingSingleClick);
-        pendingSingleClick = null;
-      }
+      if (pendingSingleClick) { clearTimeout(pendingSingleClick); pendingSingleClick = null; }
       onDoubleClick && onDoubleClick();
       return;
     }
-
-    // Single click with manual double-click window
-    if (pendingSingleClick) {
-      clearTimeout(pendingSingleClick);
-    }
+    if (pendingSingleClick) clearTimeout(pendingSingleClick);
     pendingSingleClick = setTimeout(() => {
       pendingSingleClick = null;
       onSingleClick && onSingleClick();

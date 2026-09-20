@@ -6,7 +6,7 @@ const invoke = tauri?.core?.invoke || tauri?.invoke;
 const listen = tauri?.event?.listen || tauri?.listen;
 
 const spriteElement = document.getElementById('sprite');
-const sprite = new SpriteSheet(spriteElement);
+let sprite = new SpriteSheet(spriteElement);
 
 let rules = {
   sneezeEveryMinutes: 30,
@@ -15,12 +15,30 @@ let rules = {
   doubleClick: 'sneezing',
 };
 
+function applyScale(scale) {
+  const w = 192 * scale;
+  const h = 208 * scale;
+  document.documentElement.style.setProperty('--sprite-w', `${w}px`);
+  document.documentElement.style.setProperty('--sprite-h', `${h}px`);
+  sprite.setScale(scale);
+}
+
 async function loadInitialRules() {
   if (!invoke) return;
   try {
     rules = await invoke('get_rules');
   } catch (e) {
     console.warn('get_rules failed; using defaults', e);
+  }
+}
+
+async function loadInitialScale() {
+  if (!invoke) return;
+  try {
+    const scale = await invoke('get_scale');
+    applyScale(scale);
+  } catch (e) {
+    console.warn('get_scale failed; using default 1.0', e);
   }
 }
 
@@ -43,6 +61,7 @@ installMouseHandling(spriteElement, {
 });
 
 (async function init() {
+  await loadInitialScale();
   await loadInitialRules();
 
   if (listen) {
@@ -53,9 +72,10 @@ installMouseHandling(spriteElement, {
     await listen('rules_changed', (event) => {
       if (event.payload) rules = event.payload;
     });
+    await listen('scale_changed', (event) => {
+      if (typeof event.payload === 'number') applyScale(event.payload);
+    });
     await listen('paused', (event) => {
-      // Optional: show a "paused" indicator. For parity with Swift version we just keep
-      // listening and let Rust stop emitting trigger events when paused.
       console.log('paused:', event.payload);
     });
   }
