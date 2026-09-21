@@ -13,6 +13,6 @@ mod tests {
 
     #[test]
     fn version_is_set() {
-        assert_eq!(version(), "1.0.0");
+        assert_eq!(version(), "1.1.0");
     }
 }

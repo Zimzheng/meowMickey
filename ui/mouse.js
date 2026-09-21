@@ -3,7 +3,7 @@ const invoke = tauri?.core?.invoke || tauri?.invoke;
 const DRAG_THRESHOLD = 3;
 const CLICK_DELAY_MS = 250;
 
-export function installMouseHandling(element, { onSingleClick, onDoubleClick, onRightClick }) {
+export function installMouseHandling(element, { onSingleClick, onDoubleClick, onRapidClick, onRightClick }) {
   let dragStartClient = null;
   let moved = false;
   let pendingSingleClick = null;
@@ -43,7 +43,12 @@ export function installMouseHandling(element, { onSingleClick, onDoubleClick, on
       invoke('end_drag').catch(() => {});
     }
     if (wasDragging) return;
-    if (event.detail >= 2) {
+    if (event.detail >= 3) {
+      if (pendingSingleClick) { clearTimeout(pendingSingleClick); pendingSingleClick = null; }
+      onRapidClick && onRapidClick();
+      return;
+    }
+    if (event.detail === 2) {
       if (pendingSingleClick) { clearTimeout(pendingSingleClick); pendingSingleClick = null; }
       onDoubleClick && onDoubleClick();
       return;

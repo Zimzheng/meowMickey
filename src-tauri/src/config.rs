@@ -8,6 +8,39 @@ pub struct Rules {
     pub knead_every_minutes: f64,
     pub single_click: String,
     pub double_click: String,
+    #[serde(default = "default_true")]
+    pub behavior_enabled: bool,
+    #[serde(default = "default_cooldown_seconds")]
+    pub action_cooldown_seconds: f64,
+    #[serde(default = "default_work_break_minutes")]
+    pub work_break_minutes: f64,
+    #[serde(default = "default_true")]
+    pub night_quiet_enabled: bool,
+    #[serde(default = "default_night_start_hour")]
+    pub night_start_hour: u8,
+    #[serde(default = "default_night_end_hour")]
+    pub night_end_hour: u8,
+    #[serde(default = "default_night_yawn_minutes")]
+    pub night_yawn_minutes: f64,
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_cooldown_seconds() -> f64 {
+    12.0
+}
+fn default_work_break_minutes() -> f64 {
+    60.0
+}
+fn default_night_start_hour() -> u8 {
+    23
+}
+fn default_night_end_hour() -> u8 {
+    7
+}
+fn default_night_yawn_minutes() -> f64 {
+    90.0
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -15,6 +48,11 @@ pub enum Action {
     Idle,
     Sneezing,
     Kneading,
+    RubNose,
+    Contented,
+    HeadTilt,
+    Yawning,
+    Stretching,
 }
 
 impl Action {
@@ -23,6 +61,11 @@ impl Action {
             Action::Idle => "idle",
             Action::Sneezing => "sneezing",
             Action::Kneading => "kneading",
+            Action::RubNose => "rubnose",
+            Action::Contented => "contented",
+            Action::HeadTilt => "headtilt",
+            Action::Yawning => "yawning",
+            Action::Stretching => "stretching",
         }
     }
 
@@ -31,6 +74,11 @@ impl Action {
             "idle" => Some(Action::Idle),
             "sneezing" => Some(Action::Sneezing),
             "kneading" => Some(Action::Kneading),
+            "rubnose" => Some(Action::RubNose),
+            "contented" => Some(Action::Contented),
+            "headtilt" => Some(Action::HeadTilt),
+            "yawning" => Some(Action::Yawning),
+            "stretching" => Some(Action::Stretching),
             _ => None,
         }
     }
@@ -43,6 +91,13 @@ impl Rules {
             knead_every_minutes: 5.0,
             single_click: "kneading".to_string(),
             double_click: "sneezing".to_string(),
+            behavior_enabled: true,
+            action_cooldown_seconds: default_cooldown_seconds(),
+            work_break_minutes: default_work_break_minutes(),
+            night_quiet_enabled: true,
+            night_start_hour: default_night_start_hour(),
+            night_end_hour: default_night_end_hour(),
+            night_yawn_minutes: default_night_yawn_minutes(),
         }
     }
 
@@ -54,15 +109,20 @@ impl Rules {
         self.sneeze_every_minutes = valid_interval(self.sneeze_every_minutes, 30.0);
         self.knead_every_minutes = valid_interval(self.knead_every_minutes, 5.0);
         self.single_click = Action::from_name(&self.single_click)
-            .filter(|action| *action != Action::Idle)
+            .filter(|action| matches!(action, Action::Sneezing | Action::Kneading))
             .unwrap_or(Action::Kneading)
             .as_str()
             .to_string();
         self.double_click = Action::from_name(&self.double_click)
-            .filter(|action| *action != Action::Idle)
+            .filter(|action| matches!(action, Action::Sneezing | Action::Kneading))
             .unwrap_or(Action::Sneezing)
             .as_str()
             .to_string();
+        self.action_cooldown_seconds = valid_seconds(self.action_cooldown_seconds, 12.0);
+        self.work_break_minutes = valid_interval(self.work_break_minutes, 60.0);
+        self.night_yawn_minutes = valid_interval(self.night_yawn_minutes, 90.0);
+        self.night_start_hour = self.night_start_hour.min(23);
+        self.night_end_hour = self.night_end_hour.min(23);
         self
     }
 
@@ -78,6 +138,14 @@ impl Rules {
 fn valid_interval(value: f64, fallback: f64) -> f64 {
     if value.is_finite() {
         value.max(1.0)
+    } else {
+        fallback
+    }
+}
+
+fn valid_seconds(value: f64, fallback: f64) -> f64 {
+    if value.is_finite() {
+        value.clamp(3.0, 300.0)
     } else {
         fallback
     }
@@ -141,6 +209,7 @@ mod tests {
             knead_every_minutes: 5.0,
             single_click: "unknown".to_string(),
             double_click: "unknown".to_string(),
+            ..Rules::default_rules()
         };
         assert_eq!(r.action_for_single_click(), Action::Kneading);
         assert_eq!(r.action_for_double_click(), Action::Sneezing);

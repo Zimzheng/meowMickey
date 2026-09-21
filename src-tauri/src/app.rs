@@ -29,7 +29,7 @@ pub type SharedState = Arc<Mutex<AppState>>;
 
 #[derive(Clone, Serialize)]
 struct TriggerPayload {
-    action: String,
+    actions: Vec<String>,
 }
 
 #[derive(Clone, Serialize)]
@@ -203,12 +203,9 @@ pub fn run() -> tauri::Result<()> {
                 loop {
                     interval.tick().await;
                     let mut st = state_for_tick.lock().unwrap();
-                    if let Some(action) = st.scheduler.tick(clock_for_tick.as_ref()) {
+                    if let Some(actions) = st.scheduler.tick(clock_for_tick.as_ref()) {
                         drop(st);
-                        let _ = app_handle_for_tick.emit(
-                            "trigger",
-                            TriggerPayload { action: action.as_str().to_string() },
-                        );
+                        emit_sequence(&app_handle_for_tick, actions);
                     }
                 }
             });
@@ -233,6 +230,7 @@ pub fn run() -> tauri::Result<()> {
             native_drag,
             set_scale,
             get_scale,
+            set_local_hour,
         ])
         .run(tauri::generate_context!())
 }
@@ -285,6 +283,8 @@ fn build_tray_menu(
     use tauri::menu::Submenu;
     let sneeze = MenuItem::with_id(app, "sneeze", "打喷嚏", true, None::<&str>)?;
     let knead = MenuItem::with_id(app, "knead", "踩奶", true, None::<&str>)?;
+    let head_tilt = MenuItem::with_id(app, "headtilt", "好奇歪头", true, None::<&str>)?;
+    let stretch = MenuItem::with_id(app, "stretch", "伸懒腰", true, None::<&str>)?;
     let sep1 = PredefinedMenuItem::separator(app)?;
     let reload = MenuItem::with_id(app, "reload", "重新加载规则", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "打开规则文件", true, None::<&str>)?;
@@ -314,7 +314,7 @@ fn build_tray_menu(
     let quit = MenuItem::with_id(app, "quit", "退出米奇", true, None::<&str>)?;
     Menu::with_items(
         app,
-        &[&sneeze, &knead, &sep1, &reload, &open, &pause, &size_submenu, &sep2, &quit],
+        &[&sneeze, &knead, &head_tilt, &stretch, &sep1, &reload, &open, &pause, &size_submenu, &sep2, &quit],
     )
     // keep `current_scale` referenced so the linter doesn't complain;
     // it's used in handle_menu_event for the ✓ indicator (future work).
@@ -328,17 +328,21 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
     let state: tauri::State<SharedState> = app.state();
     match event.id().as_ref() {
         "sneeze" => {
-            emit_trigger(app, "sneezing");
             let mut st = state.lock().unwrap();
-            st.scheduler
-                .trigger(crate::config::Action::Sneezing, &SystemClock);
+            let action = crate::config::Action::Sneezing;
+            st.scheduler.trigger(action, &SystemClock);
+            drop(st);
+            emit_sequence(app, Scheduler::sequence_for(action));
         }
         "knead" => {
-            emit_trigger(app, "kneading");
             let mut st = state.lock().unwrap();
-            st.scheduler
-                .trigger(crate::config::Action::Kneading, &SystemClock);
+            let action = crate::config::Action::Kneading;
+            st.scheduler.trigger(action, &SystemClock);
+            drop(st);
+            emit_sequence(app, Scheduler::sequence_for(action));
         }
+        "headtilt" => emit_sequence(app, vec![Action::HeadTilt]),
+        "stretch" => emit_sequence(app, vec![Action::Stretching]),
         "reload" => {
             reload_rules_into(app);
         }
@@ -413,8 +417,9 @@ fn parse_size_id(id: &str) -> Option<f64> {
     }
 }
 
-fn emit_trigger(app: &AppHandle, action: &str) {
-    let _ = app.emit("trigger", TriggerPayload { action: action.to_string() });
+fn emit_sequence(app: &AppHandle, actions: Vec<Action>) {
+    let actions = actions.into_iter().map(|action| action.as_str().to_string()).collect();
+    let _ = app.emit("trigger", TriggerPayload { actions });
 }
 
 fn reload_rules_into(app: &AppHandle) {
@@ -513,9 +518,10 @@ fn trigger_action(app: AppHandle, state: tauri::State<SharedState>, action: Stri
     if parsed == Action::Idle {
         return;
     }
-    emit_trigger(&app, &action);
     let mut st = state.lock().unwrap();
     st.scheduler.trigger(parsed, &SystemClock);
+    drop(st);
+    emit_sequence(&app, Scheduler::sequence_for(parsed));
 }
 
 #[tauri::command]
@@ -541,4 +547,9 @@ fn set_scale(app: AppHandle, scale: f64) {
 #[tauri::command]
 fn get_scale(state: tauri::State<SharedState>) -> f64 {
     state.lock().unwrap().scale
+}
+
+#[tauri::command]
+fn set_local_hour(state: tauri::State<SharedState>, hour: u8) {
+    state.lock().unwrap().scheduler.set_local_hour(hour);
 }

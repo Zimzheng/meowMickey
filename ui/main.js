@@ -13,6 +13,7 @@ let rules = {
   kneadEveryMinutes: 5,
   singleClick: 'kneading',
   doubleClick: 'sneezing',
+  behaviorEnabled: true,
 };
 
 function applyScale(scale) {
@@ -57,6 +58,7 @@ function triggerAction(action) {
 installMouseHandling(spriteElement, {
   onSingleClick: () => triggerAction(rules.singleClick),
   onDoubleClick: () => triggerAction(rules.doubleClick),
+  onRapidClick: () => triggerAction('headtilt'),
   onRightClick: () => {
     if (invoke) invoke('show_context_menu').catch(() => {});
   },
@@ -65,11 +67,16 @@ installMouseHandling(spriteElement, {
 (async function init() {
   await loadInitialScale();
   await loadInitialRules();
+  if (invoke) {
+    const reportHour = () => invoke('set_local_hour', { hour: new Date().getHours() }).catch(() => {});
+    reportHour();
+    setInterval(reportHour, 5 * 60 * 1000);
+  }
 
   if (listen) {
     await listen('trigger', (event) => {
-      const action = event.payload?.action;
-      if (action) sprite.setAction(action);
+      const actions = event.payload?.actions;
+      if (Array.isArray(actions)) sprite.playSequence(actions);
     });
     await listen('rules_changed', (event) => {
       if (event.payload) rules = event.payload;

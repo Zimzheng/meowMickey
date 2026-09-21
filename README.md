@@ -5,7 +5,9 @@ A floating desktop pet that performs idle animations, sneezing, and kneading on 
 ## Features
 
 - **Floating, transparent, always-on-top** window — sits anywhere on your desktop
-- **Three animations**: idle (breathing loop), sneezing, kneading
+- **Eight animations**: idle, sneezing, kneading, nose rubbing, contented resting, curious head tilt, yawning, and stretching
+- **Natural action chains**: sneeze → rub nose; knead → settle down contentedly
+- **Context-aware behavior**: work-break stretching, quiet nighttime behavior, and rapid-click reactions
 - **Timer-driven**: defaults to sneeze every 30 min, knead every 5 min (configurable)
 - **Click & drag**: single-click = knead, double-click = sneeze, drag = move window (native AppKit drag, silky smooth)
 - **Resizable**: 50% / 75% / 100% / 125% / 150% / 200% via tray submenu. Size persists across restarts.
@@ -60,7 +62,7 @@ cd src-tauri
 cargo test --lib
 ```
 
-Covers `config`, `window_state`, `timer` modules — 25 tests including backward-compat for the `scale` field in `window.json`.
+Covers `config`, `window_state`, and `timer` modules — 30 tests including behavior sequences, night mode, work breaks, and backward compatibility.
 
 ## Configuration
 
@@ -71,7 +73,14 @@ Covers `config`, `window_state`, `timer` modules — 25 tests including backward
   "sneezeEveryMinutes": 30,
   "kneadEveryMinutes": 5,
   "singleClick": "kneading",
-  "doubleClick": "sneezing"
+  "doubleClick": "sneezing",
+  "behaviorEnabled": true,
+  "actionCooldownSeconds": 12,
+  "workBreakMinutes": 60,
+  "nightQuietEnabled": true,
+  "nightStartHour": 23,
+  "nightEndHour": 7,
+  "nightYawnMinutes": 90
 }
 ```
 
@@ -88,6 +97,8 @@ user application-data directory.
 |---|---|
 | 打喷嚏 | Sneeze animation (one cycle, then back to idle) |
 | 踩奶 | Knead animation (one cycle, then back to idle) |
+| 好奇歪头 | Play the curious rapid-click reaction |
+| 伸懒腰 | Play the work-break stretch |
 | 重新加载规则 | Re-read `rules.json` from disk |
 | 打开规则文件 | Open `rules.json` in default editor |
 | 暂停／继续定时动作 | Pause/resume the timer |

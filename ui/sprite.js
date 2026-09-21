@@ -5,6 +5,11 @@ const FRAME_DURATIONS = {
   idle:     [0.28, 0.11, 0.11, 0.14, 0.14, 0.32],
   sneezing: [0.18, 0.15, 0.12, 0.14, 0.17, 0.25],
   kneading: [0.18, 0.18, 0.18, 0.18, 0.18, 0.24],
+  rubnose:   [0.14, 0.15, 0.18, 0.18, 0.16, 0.20],
+  contented: [0.16, 0.16, 0.18, 0.20, 0.24, 0.45],
+  headtilt:  [0.15, 0.18, 0.20, 0.20, 0.18, 0.22],
+  yawning:   [0.18, 0.20, 0.24, 0.32, 0.22, 0.28],
+  stretching:[0.18, 0.20, 0.26, 0.28, 0.20, 0.22],
 };
 
 function assetUrl(action) {
@@ -18,10 +23,16 @@ export class SpriteSheet {
     this.frameIndex = 0;
     this.timerId = null;
     this.scale = scale;
+    this.queue = [];
     this.urls = {
       idle: assetUrl('idle'),
       sneezing: assetUrl('sneezing'),
       kneading: assetUrl('kneading'),
+      rubnose: assetUrl('rubnose'),
+      contented: assetUrl('contented'),
+      headtilt: assetUrl('headtilt'),
+      yawning: assetUrl('yawning'),
+      stretching: assetUrl('stretching'),
     };
     this.preload();
     this.setAction('idle');
@@ -52,6 +63,13 @@ export class SpriteSheet {
     this.scheduleNext();
   }
 
+  playSequence(actions) {
+    const valid = (actions || []).filter((action) => action !== 'idle' && FRAME_DURATIONS[action]);
+    if (!valid.length) return;
+    this.queue = valid.slice(1);
+    this.setAction(valid[0]);
+  }
+
   render() {
     // At scale > 1 the div is larger than the source sprite. background-size: 100% 100%
     // (in CSS) scales the image to fill the div. background-position operates in
@@ -73,6 +91,9 @@ export class SpriteSheet {
     if (this.frameIndex >= FRAME_COUNT) {
       if (this.action === 'idle') {
         this.frameIndex = 0;
+      } else if (this.queue.length) {
+        this.setAction(this.queue.shift());
+        return;
       } else {
         this.setAction('idle');
         return;
