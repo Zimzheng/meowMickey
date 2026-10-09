@@ -1,124 +1,112 @@
-# Mickey Companion
+# 米奇 · 桌面上的小猫陪伴
 
-A floating desktop pet that performs idle animations, sneezing, and kneading on a timer. Resizable from 50% to 200%. Built with Tauri 2 (Rust + HTML/CSS/JS), runs on macOS and Windows.
+[简体中文](README.md) · [English](README.en.md)
 
-## Features
+一只会撒娇、提醒你喝水的小猫，把日常互动和喝水记录留在你的电脑里，还能生成带着米奇的陪伴日记。
 
-- **Floating, transparent, always-on-top** window — sits anywhere on your desktop
-- **Ten animations**: the original eight plus thirsty and happy drinking actions
-- **Hydration companion**: daytime reminders, 200/300/500 ml shortcuts, custom amounts, and immediate daily totals
-- **Private local history**: every water entry stores amount, local date/time, timestamp, and source for future daily summaries
-- **Natural action chains**: sneeze → rub nose; knead → settle down contentedly
-- **Context-aware behavior**: work-break stretching, quiet nighttime behavior, and rapid-click reactions
-- **Timer-driven**: defaults to sneeze every 30 min, knead every 5 min (configurable)
-- **Click & drag**: single-click = knead, double-click = sneeze, drag = move window (native AppKit drag, silky smooth)
-- **Resizable**: 50% / 75% / 100% / 125% / 150% / 200% via tray submenu. Size persists across restarts.
-- **Display recovery**: suspicious legacy 50% positions above the visible desktop reset to the primary screen automatically.
-- **Right-click the cat** for the full menu; left-click 🐾 in the menu bar to reveal Mickey if hidden
-- **No window chrome**: lives on the desktop, doesn't appear in the Dock or taskbar
+**[下载 macOS 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-macOS-arm64-v1.2.5.zip)** · **[下载 Windows 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-v1.2.5-windows-x86_64-setup.exe)** · [全部版本](https://github.com/Zimzheng/meowMickey/releases) · [反馈问题](https://github.com/Zimzheng/meowMickey/issues)
 
-## Architecture
+| 米奇陪着你 | 和米奇一起喝水 |
+| :---: | :---: |
+| [![米奇待机动画](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.2.5) | [![米奇完整六帧喝水动画](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.2.5) |
 
-- **Backend** (`src-tauri/`): Rust. Owns the timer, `rules.json` I/O, window position+scale persistence, system tray, and the IPC bridge.
-- **Frontend** (`ui/`): Vanilla HTML/CSS/JS. Owns sprite rendering (background-position stepping through a 6-frame sprite sheet) and mouse interaction. No build step.
-- **Spec**: `docs/superpowers/specs/2026-09-18-mickey-tauri-port-design.md`
-- **Plan**: `docs/superpowers/plans/2026-09-18-mickey-tauri-port.md`
+以上 GIF 使用应用内的实际动画素材和逐帧时长，浅蓝背景用于演示；安装后，米奇的窗口背景是透明的。点击动画进入下载页。
 
-## Requirements
+## 米奇能陪你做什么
 
-- Rust 1.75+
-- Node-free. No npm, no Vite.
-- macOS: Xcode Command Line Tools (`xcode-select --install`)
-- Windows: MSVC build tools + WebView2 runtime (preinstalled on Win 10/11)
+- **让桌面多一点陪伴**：透明悬浮的小猫，可以拖到喜欢的位置。摸摸、双击、快速点击，会得到不同反应；还有打喷嚏、踩奶、歪头、伸懒腰和打哈欠。
+- **把喝水变成一起做的小事**：米奇口渴时会提醒你。选择 200 / 300 / 500 ml 或输入自定义水量，米奇就会开心喝水，回应“咕噜噜～”。当天总量即时更新，误记可以撤销。
+- **偶尔主动来找你**：久未互动时，米奇会说“米奇想你了，摸摸米奇吧～”。喝水提醒和定时动作支持夜间安静规则，提醒也可以稍后再处理。
+- **分享一天的陪伴**：生成带米奇形象的日记图片，展示当天喝水总量、互动总数，以及摸摸、双击、喝水记录等具体明细。直接预览并复制图片或文字，方便粘贴给朋友。
+- **按你的习惯调整**：右键调整大小、暂停定时动作、编辑提醒规则，或检查并安装新版。窗口位置和大小会保留到下次启动。
 
-## Quick Start
+## 下载与安装
 
-```bash
-./scripts/dev.sh
-```
+当前发布版本：**v1.2.5**。直接下载安装包即可使用，无需安装 Rust 或 Node.js。
 
-This runs `cargo tauri dev` from `src-tauri/`. Hot-reloads both Rust and `ui/` files.
+| 系统 | 下载 | 安装方式 |
+| --- | --- | --- |
+| macOS · Apple Silicon（M 系列） | [ZIP 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-macOS-arm64-v1.2.5.zip) | 解压，将 `米奇.app` 拖入“应用程序”，然后打开 |
+| Windows 10 / 11 · x64 | [EXE 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-v1.2.5-windows-x86_64-setup.exe) | 运行中文安装向导，安装到当前用户目录；缺少 WebView2 时会下载运行环境 |
 
-## Building
+Intel Mac 和 Windows ARM 原生安装包暂未提供。macOS 当前包使用临时签名，尚未经过 Apple 公证；系统可能提示开发者未验证。安装相关问题请附上系统版本到 [Issues](https://github.com/Zimzheng/meowMickey/issues) 反馈。
 
-```bash
-./scripts/build.sh
-```
+安装包之外的 `.sig`、`.app.tar.gz` 和 `latest.json` 是应用内更新文件，日常安装请选择上表的 ZIP 或 EXE。
 
-Outputs to `dist/<os>/`:
-- macOS: `米奇.app` + `启动米奇.command`
-- Windows: `米奇`（NSIS 安装程序） and/or `.msi` + `启动米奇.bat`
+### 已经装过米奇？
 
-## Running
+右键米奇 → **更新米奇版本**。发现新版后，确认“更新并重启”，米奇会下载、验证更新签名、安装并重新启动。本地喝水和互动记录不随安装包发布，更新不会主动清除这些记录。
 
-After building, double-click the launcher in `dist/<os>/`, or:
+如果旧版还没有更新入口，先退出米奇，再手动安装。macOS 将新版 `米奇.app` 覆盖原应用即可。
 
-```bash
-open dist/macos/米奇.app            # macOS
-dist/windows/启动米奇.bat                     # Windows
-```
+## 开始和米奇相处
 
-## Tests
+| 想做的事 | 操作 |
+| --- | --- |
+| 移动米奇 | 按住小猫拖动 |
+| 摸摸 / 打喷嚏 | 默认单击踩奶、双击打喷嚏；可以在规则中修改 |
+| 记录喝水 | 右键 → **喝水与记录** → 选择水量或输入 10–3000 ml |
+| 撤销误记 | 右键 → **撤销最近一次喝水**，或使用记录成功后的撤销按钮 |
+| 分享陪伴日记 | 在喝水面板点 **分享今天的米奇记录** → **复制图片** 或 **复制文字** |
+| 调整大小 | 右键 → **大小**，选择 50%–200%；100% 为默认大小 |
+| 暂停定时动作 | 右键 → **暂停／继续定时动作** |
+| 找回隐藏的米奇 | 点击菜单栏 / 系统托盘中的爪印图标 |
+| 退出 | 右键 → **退出米奇** |
 
-```bash
-cd src-tauri
-cargo test --lib
-```
+喝水面板和日记预览在小猫旁边打开。分享时由你复制和粘贴，米奇不会自动发送内容给其他人。
 
-Covers configuration, hydration storage, window state, and scheduling — 33 tests including reminders, undo, night mode, work breaks, and backward compatibility.
+## 记录与隐私
 
-## Configuration
+- **不需要账号**。当前实现将喝水数据写入本地应用数据目录，将互动记录存入本地 WebView 存储，没有云端同步功能。
+- 喝水记录包含水量、日期、时间和来源，最多保留最近 **10,000 条**；互动记录最多保留最近 **500 条**。陪伴日记汇总当天仍保留的记录。
+- **更新需要联网**：检查版本和下载安装包会访问 GitHub；Windows 首次安装可能需要下载 WebView2。
+- 分享预览不会自动把图片保存到下载目录。请自行保管需要长期保存的日记和记录；清理应用数据或系统存储可能删除历史记录。
 
-`rules.json` in the project root (or next to the executable in `dist/`):
+## 自定义提醒
+
+右键 → **打开规则文件**，在现有 `rules.json` 中修改对应字段。保存后自动重载，也可以点 **重新加载规则**。
+
+默认喝水提醒间隔为 60 分钟；夜间时段为 23:00–07:00。下面列出常用字段，可合并到现有配置中：
 
 ```json
 {
+  "hydrationEnabled": true,
+  "hydrationEveryMinutes": 60,
   "sneezeEveryMinutes": 30,
   "kneadEveryMinutes": 5,
-  "singleClick": "kneading",
-  "doubleClick": "sneezing",
-  "behaviorEnabled": true,
-  "actionCooldownSeconds": 12,
-  "workBreakMinutes": 60,
   "nightQuietEnabled": true,
   "nightStartHour": 23,
   "nightEndHour": 7,
-  "nightYawnMinutes": 90,
-  "hydrationEnabled": true,
-  "hydrationEveryMinutes": 60
+  "singleClick": "kneading",
+  "doubleClick": "sneezing"
 }
 ```
 
-Reading priority: external (next to exe) → bundled (inside app) → hardcoded default.
+完整字段见 [默认规则](rules.json)。优先使用应用旁边的规则文件；否则在用户应用数据目录创建可编辑的副本。喝水提醒是日常陪伴功能，记录水量由用户自行选择。
 
-Saving the file reloads both click mappings and timers automatically. The tray
-menu's "重新加载规则" remains available as a manual fallback. Portable builds
-use the file beside the app; installed builds create a writable copy in the
-user application-data directory.
+## 开发与贡献
 
-## Tray menu
+米奇使用 **Tauri 2 + Rust + 原生 HTML / CSS / JavaScript**，前端无需 npm 构建。
 
-| Menu item | Action |
-|---|---|
-| 打喷嚏 | Sneeze animation (one cycle, then back to idle) |
-| 踩奶 | Knead animation (one cycle, then back to idle) |
-| 好奇歪头 | Play the curious rapid-click reaction |
-| 伸懒腰 | Play the work-break stretch |
-| 喝水与记录 | Open the hydration card and record a drink |
-| 重新加载规则 | Re-read `rules.json` from disk |
-| 打开规则文件 | Open `rules.json` in default editor |
-| 暂停／继续定时动作 | Pause/resume the timer |
-| 大小 → 50% / 75% / 100% / 125% / 150% / 200% | Resize the pet; choice persists across restarts |
-| 退出米奇 | Quit |
+安装稳定版 Rust、Tauri CLI 2.11.4，以及对应系统的编译工具后：
 
-## Notes
+```bash
+git clone https://github.com/Zimzheng/meowMickey.git
+cd meowMickey
+cargo install tauri-cli --version 2.11.4 --locked
+cargo tauri dev
+```
 
-- Local builds receive a valid ad hoc signature. Public distribution still
-  requires a Developer ID signature and Apple notarization.
-- Not notarized. Internal use only — see spec §1.2.
-- Mickey's sprite assets are checked in as PNGs (192×208 per frame, 6 frames per action).
+开发环境、macOS / Windows 打包命令和验证方式见 [开发指南](docs/DEVELOPMENT.md)。正式发布的签名与双平台清单见 [版本更新说明](docs/UPDATES.md)。
 
-## 应用内版本更新
+| 目录 | 作用 |
+| --- | --- |
+| `src-tauri/src/` | 窗口、托盘、规则调度、本地饮水存储、系统剪贴板和版本更新 |
+| `ui/` | 动画、互动、喝水面板与日记绘制 |
+| `ui/sprites/` | 米奇动画素材 |
+| `rules.json` | 默认互动与提醒配置 |
+| `.github/workflows/` | Windows 自动测试、构建和安装包发布 |
 
-右键米奇 → **更新米奇版本**，检查 GitHub 正式发布的新版；确认后下载、验证签名、安装并重启。
-更新包的构建与发布步骤见 [版本更新说明](docs/UPDATES.md)。
+欢迎在 [Issues](https://github.com/Zimzheng/meowMickey/issues) 提交问题或建议。反馈问题时请说明系统、米奇版本、复现步骤，并提供经过隐私检查的截图。
+
+目前仓库未提供 LICENSE 文件；如需再分发代码或米奇素材，请先联系作者确认授权。
