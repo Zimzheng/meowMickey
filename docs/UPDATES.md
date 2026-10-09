@@ -19,7 +19,7 @@ CI 构建时，将私钥和可选密码通过 `TAURI_SIGNING_PRIVATE_KEY`、
 1. 同步更新 Cargo.toml、tauri.conf.json 和版本测试中的版本号。
 2. 运行 `bash scripts/build.sh`，生成已签名更新包、`.sig` 和 `latest.json`。
 3. 为对应版本创建正式 GitHub Release，例如 `v1.2.5`。
-4. 上传 `dist/macos/` 中 `darwin-aarch64-米奇.app.tar.gz`、对应 `.sig`、`latest.json`。
+4. 上传 `dist/macos/` 中 `Mickey-v1.2.5-darwin-aarch64.app.tar.gz`、对应 `.sig`、`latest.json`。
 5. Windows 或 Intel Mac 需在对应平台构建，使用同一私钥；
    `python3 scripts/prepare-update.py --out dist/updates --target windows-x86_64 --merge <另一平台的latest.json>`
    合并清单。上传所有平台的更新包和**合并后的唯一 latest.json**。

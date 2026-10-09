@@ -12,9 +12,9 @@
 
 本次附件为 **macOS Apple Silicon（arm64）版本**。Windows 安装包与 Intel Mac 安装包不包含在本次发布中。
 
-手动安装请下载 `米奇-macOS-arm64-v1.2.5.zip`，退出旧版后，将“米奇.app”拖入应用程序目录覆盖安装。
+手动安装请下载 `Mickey-macOS-arm64-v1.2.5.zip`，退出旧版后，将“米奇.app”拖入应用程序目录覆盖安装。
 
-`darwin-aarch64-米奇.app.tar.gz`、对应 `.sig` 和 `latest.json` 用于后续的应用内签名更新。旧版本没有更新入口时，需要先手动安装本版。
+`Mickey-v1.2.5-darwin-aarch64.app.tar.gz`、对应 `.sig` 和 `latest.json` 用于后续的应用内签名更新。旧版本没有更新入口时，需要先手动安装本版。
 
 ## 验证
 

@@ -27,7 +27,8 @@ def prepare(root, out, target, notes="优化体验与修复问题。", base=None
         raise ValueError("Cannot merge update manifests for different versions")
     out.mkdir(parents=True, exist_ok=True)
     # Platform suffixes prevent Intel/Apple Silicon artifacts overwriting each other.
-    name = target + "-" + artifact.name
+    suffix = {"darwin": ".app.tar.gz", "windows": "-setup.exe", "linux": ".AppImage"}[os_name]
+    name = "Mickey-v" + version + "-" + target + suffix
     shutil.copy2(artifact, out / name)
     shutil.copy2(str(artifact) + ".sig", out / (name + ".sig"))
     manifest.update(notes=notes, pub_date=datetime.datetime.now(datetime.timezone.utc).isoformat())
