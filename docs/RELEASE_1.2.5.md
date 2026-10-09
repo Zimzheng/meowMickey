@@ -10,11 +10,13 @@
 
 ## 下载与安装
 
-本次附件为 **macOS Apple Silicon（arm64）版本**。Windows 安装包与 Intel Mac 安装包不包含在本次发布中。
+本次提供 **macOS Apple Silicon（arm64）** 和 **Windows x64** 下载。Intel Mac 安装包暂未提供。
 
 手动安装请下载 `Mickey-macOS-arm64-v1.2.5.zip`，退出旧版后，将“米奇.app”拖入应用程序目录覆盖安装。
 
-`Mickey-v1.2.5-darwin-aarch64.app.tar.gz`、对应 `.sig` 和 `latest.json` 用于后续的应用内签名更新。旧版本没有更新入口时，需要先手动安装本版。
+Windows 10/11（x64）请下载 `Mickey-v1.2.5-windows-x86_64-setup.exe`，运行中文安装向导。安装在当前用户目录，不影响 macOS 安装。缺少 WebView2 时，安装向导会下载所需运行环境。
+
+macOS 的 `.app.tar.gz`、Windows 的 `-setup.exe`、对应 `.sig` 和合并后的 `latest.json` 用于后续的应用内签名更新。旧版本没有更新入口时，需要先手动安装本版。
 
 ## 验证
 
