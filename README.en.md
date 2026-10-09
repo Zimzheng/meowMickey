@@ -4,11 +4,11 @@
 
 A desktop cat that asks for a little attention, reminds you to drink water, and turns your local water and interaction records into a shareable companion diary.
 
-**[Download for macOS](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-macOS-arm64-v1.2.5.zip)** · **[Download for Windows](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-v1.2.5-windows-x86_64-setup.exe)** · [All releases](https://github.com/Zimzheng/meowMickey/releases) · [Report an issue](https://github.com/Zimzheng/meowMickey/issues)
+**[Download for macOS](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip)** · **[Download for Windows](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe)** · [All releases](https://github.com/Zimzheng/meowMickey/releases) · [Report an issue](https://github.com/Zimzheng/meowMickey/issues)
 
 | A little company | A drink together |
 | :---: | :---: |
-| [![Mickey's idle animation](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.2.5) | [![Mickey's complete six-frame drinking animation](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.2.5) |
+| [![Mickey's idle animation](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) | [![Mickey's complete six-frame drinking animation](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) |
 
 These GIFs use the application's actual sprite assets and frame timings. The light blue background is for the preview; Mickey's installed window is transparent. Click either animation to open the release page.
 
@@ -16,18 +16,25 @@ These GIFs use the application's actual sprite assets and frame timings. The lig
 
 - **Keep you company**: a transparent floating cat you can drag around the desktop. Pet, double-click, or click rapidly for different reactions, alongside sneezing, kneading, head tilts, stretches, and yawns.
 - **Make drinking water a shared moment**: Mickey gets thirsty and reminds you to take a drink. Pick 200 / 300 / 500 ml or enter a custom amount, watch Mickey drink, and see your daily total update. Mistakes can be undone.
+- **See your week of recorded water**: open the seven-day chart in **喝水与记录**, select a day for times, amounts, and sources, and read a locally generated one-sentence summary. Missing records stay distinct from zero intake, and today is still accumulating.
 - **Check in occasionally**: after a long period without interaction, Mickey may ask for attention. Water reminders and scheduled actions support nighttime quiet rules, and reminders can be postponed.
 - **Share a companion diary**: preview an image with Mickey, today's water total, interaction count, and a breakdown of activities such as petting, double-clicking, and logging water. Copy the image or text to paste into another app.
 - **Fit your routine**: change the size, pause scheduled actions, edit reminder rules, and install new versions from the context menu. Position and size persist across restarts.
 
+### Seven-day water trends
+
+[![Seven-day chart, summary, and daily entries using fictional demo data](docs/assets/hydration-week-demo.jpg)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0)
+
+This preview uses fictional records. The window covers today and the preceding six local calendar dates, using your existing history. Summaries are generated on your computer.
+
 ## Download and install
 
-Current release: **v1.2.5**. Install a release package directly; Rust and Node.js are not required. The application's interface and Windows installer are currently in Chinese.
+Current release: **v1.3.0**. Install a release package directly; Rust and Node.js are not required. The application's interface and Windows installer are currently in Chinese.
 
 | Platform | Download | Installation |
 | --- | --- | --- |
-| macOS · Apple Silicon (M series) | [ZIP package](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-macOS-arm64-v1.2.5.zip) | Extract, move `米奇.app` to Applications, and open it |
-| Windows 10 / 11 · x64 | [EXE installer](https://github.com/Zimzheng/meowMickey/releases/download/v1.2.5/Mickey-v1.2.5-windows-x86_64-setup.exe) | Follow the Chinese installer; it installs for the current user and downloads WebView2 if needed |
+| macOS · Apple Silicon (M series) | [ZIP package](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip) | Extract, move `米奇.app` to Applications, and open it |
+| Windows 10 / 11 · x64 | [EXE installer](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe) | Follow the Chinese installer; it installs for the current user and downloads WebView2 if needed |
 
 Native Intel Mac and Windows ARM installers are not currently available. The macOS package is ad hoc signed and has not been notarized by Apple, so the system may display an unverified-developer notice. Please report installation issues with your OS version in [Issues](https://github.com/Zimzheng/meowMickey/issues).
 
@@ -46,8 +53,9 @@ If your older version lacks this menu item, quit Mickey and install manually. On
 | Move Mickey | Click and drag the cat |
 | Pet / sneeze | Single-click kneads and double-click sneezes by default; both are configurable |
 | Log water | Right-click → **喝水与记录** → select an amount or enter 10–3000 ml |
+| View weekly trends and daily entries | Right-click → **喝水与记录**, then select a date in the chart |
 | Undo a mistake | Right-click → **撤销最近一次喝水**, or use the undo button after logging |
-| Share a diary | In the water panel, choose **分享今天的米奇记录**, then **复制图片** (Copy image) or **复制文字** (Copy text) |
+| Share a diary | Right-click → **米奇陪伴日记** (Companion diary), then **复制图片** (Copy image) or **复制文字** (Copy text) |
 | Resize | Right-click → **大小**, choose 50%–200%; 100% is the default size |
 | Pause scheduled actions | Right-click → **暂停／继续定时动作** |
 | Reveal a hidden cat | Click the paw icon in the menu bar / system tray |
@@ -97,7 +105,7 @@ cargo install tauri-cli --version 2.11.4 --locked
 cargo tauri dev
 ```
 
-See the [development guide (Chinese)](docs/DEVELOPMENT.md) for prerequisites, macOS / Windows packaging commands, and checks. Signing and publishing the combined update manifest are covered in [update documentation (Chinese)](docs/UPDATES.md).
+See the [development guide (Chinese)](docs/DEVELOPMENT.md) for prerequisites, macOS / Windows packaging commands, and checks. See [1.3.0 release notes (Chinese)](docs/RELEASE_1.3.0.md) for this update. Signing and publishing the combined update manifest are covered in [update documentation (Chinese)](docs/UPDATES.md).
 
 | Directory | Purpose |
 | --- | --- |

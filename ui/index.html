@@ -9,18 +9,29 @@
 <body>
   <div id="hydration" class="hydration" hidden aria-live="polite">
     <button id="hydration-close" class="hydration-close" aria-label="关闭">×</button>
+    <h1 class="hydration-title">喝水与记录</h1>
     <p id="hydration-message" class="hydration-message">米奇口渴啦，一起喝水吧！</p>
-    <p id="hydration-today" class="hydration-today">今天已喝 0 ml</p>
+    <p id="hydration-today" class="hydration-today">正在读取今天的记录…</p>
     <div class="hydration-presets" aria-label="记录喝水量">
       <button data-ml="200">200</button><button data-ml="300">300</button><button data-ml="500">500</button>
     </div>
     <form id="hydration-form" class="hydration-form">
-      <input id="hydration-amount" type="number" min="10" max="3000" step="10" inputmode="numeric" placeholder="自定义" aria-label="饮水量，毫升">
+      <input id="hydration-amount" type="number" min="10" max="3000" step="10" inputmode="numeric" placeholder="自定义水量" aria-label="饮水量，毫升">
       <span>ml</span><button type="submit">记录</button>
     </form>
     <button id="hydration-snooze" class="hydration-snooze">10 分钟后提醒</button>
     <button id="hydration-undo" class="hydration-undo" hidden>撤销本次记录</button>
-  <button id="diary-share" class="diary-share" hidden>分享今天的米奇记录</button>
+    <p id="hydration-error" class="hydration-error" hidden role="alert"></p>
+    <section class="hydration-week" aria-labelledby="week-title">
+      <div class="week-heading"><h2 id="week-title">近7天喝水趋势</h2><span id="week-range"></span></div>
+      <div class="week-metrics"><p><span id="week-total">—</span><small>记录总量 · ml</small></p><p><span id="week-days">—</span><small>有记录的天数</small></p></div>
+      <div class="week-chart-caption"><span>每天记录水量 · ml</span><span id="week-scale"></span></div>
+      <div id="week-chart" class="week-chart" role="group" aria-label="近7天水量，点击日期查看明细"><p>正在读取记录…</p></div>
+      <p class="week-note">— 表示未记录，不代表没有喝水；今天仍在累计。</p>
+      <p id="week-summary" class="week-summary" aria-live="polite"></p>
+      <button id="week-retry" class="week-retry" hidden>重新读取记录</button>
+    </section>
+    <section class="water-history" aria-labelledby="water-history-title"><h2 id="water-history-title">今天的喝水记录</h2><p id="water-history-total"></p><ul id="water-history-list"></ul></section>
   </div>
   <div id="companion-bubble" class="companion-bubble" hidden aria-live="polite">
     <button id="companion-close" class="companion-close" aria-label="关闭">×</button>

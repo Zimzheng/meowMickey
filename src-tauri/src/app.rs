@@ -256,6 +256,7 @@ pub fn run() -> tauri::Result<()> {
             set_local_hour,
             record_hydration,
             get_hydration_summary,
+            get_hydration_week,
             snooze_hydration,
             show_hydration_panel,
             undo_hydration,
@@ -342,6 +343,7 @@ fn build_tray_menu(
     let head_tilt = MenuItem::with_id(app, "headtilt", "好奇歪头", true, None::<&str>)?;
     let stretch = MenuItem::with_id(app, "stretch", "伸懒腰", true, None::<&str>)?;
     let hydration = MenuItem::with_id(app, "hydration", "喝水与记录", true, None::<&str>)?;
+    let diary = MenuItem::with_id(app, "diary", "米奇陪伴日记", true, None::<&str>)?;
     let hydration_undo = MenuItem::with_id(app, "hydration_undo", "撤销最近一次喝水", true, None::<&str>)?;
     let sep1 = PredefinedMenuItem::separator(app)?;
     let reload = MenuItem::with_id(app, "reload", "重新加载规则", true, None::<&str>)?;
@@ -373,7 +375,7 @@ fn build_tray_menu(
     let quit = MenuItem::with_id(app, "quit", "退出米奇", true, None::<&str>)?;
     Menu::with_items(
         app,
-        &[&sneeze, &knead, &head_tilt, &stretch, &hydration, &hydration_undo, &sep1, &reload, &update_version, &open, &pause, &size_submenu, &sep2, &quit],
+        &[&sneeze, &knead, &head_tilt, &stretch, &hydration, &diary, &hydration_undo, &sep1, &reload, &update_version, &open, &pause, &size_submenu, &sep2, &quit],
     )
     // keep `current_scale` referenced so the linter doesn't complain;
     // it's used in handle_menu_event for the ✓ indicator (future work).
@@ -403,9 +405,10 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
         "headtilt" => emit_sequence(app, vec![Action::HeadTilt]),
         "stretch" => emit_sequence(app, vec![Action::Stretching]),
         "hydration" => {
-            let _ = app.emit("hydration_prompt", ());
+            let _ = app.emit_to("main", "hydration_prompt", ());
         }
-        "hydration_undo" => { let _ = app.emit("hydration_undo_request", ()); }
+        "diary" => { let _ = app.emit_to("main", "diary_request", ()); }
+        "hydration_undo" => { let _ = app.emit_to("main", "hydration_undo_request", ()); }
         "update_version" => crate::updater::start(app),
         "reload" => {
             reload_rules_into(app);
@@ -628,16 +631,15 @@ fn record_hydration(
     local_time: String,
     source: String,
 ) -> Result<HydrationSummary, String> {
-    let (data_dir, id) = {
-        let mut st = state.lock().unwrap();
-        st.scheduler.reset_hydration(&SystemClock, None);
-        (st.data_dir.clone(), format!("{}-{}", recorded_at_ms, amount_ml))
-    };
-    let result = hydration::append(&data_dir, HydrationRecord {
-        id, amount_ml, recorded_at_ms, local_date, local_time,
+    let mut st = state.lock().unwrap();
+    let result = hydration::append(&st.data_dir, HydrationRecord {
+        id: format!("{}-{}", recorded_at_ms, amount_ml), amount_ml, recorded_at_ms, local_date, local_time,
         source: if source == "manual" { "manual".into() } else { "reminder".into() },
     })?;
+    st.scheduler.reset_hydration(&SystemClock, None);
+    drop(st);
     emit_sequence(&app, vec![Action::Drinking, Action::Contented]);
+    let _ = app.emit("hydration_data_changed", ());
     Ok(result)
 }
 
@@ -648,23 +650,32 @@ fn get_hydration_summary(state: tauri::State<SharedState>, local_date: String) -
 }
 
 #[tauri::command]
+fn get_hydration_week(state: tauri::State<SharedState>, local_date: String) -> Result<hydration::HydrationWeek, String> {
+    let st = state.lock().unwrap();
+    hydration::week_summary(&hydration::load_checked(&st.data_dir)?, &local_date)
+}
+
+#[tauri::command]
 fn snooze_hydration(state: tauri::State<SharedState>, minutes: Option<f64>) {
     state.lock().unwrap().scheduler.reset_hydration(&SystemClock, minutes.or(Some(10.0)));
 }
 
 #[tauri::command]
 fn show_hydration_panel(app: AppHandle) {
-    let _ = app.emit("hydration_prompt", ());
+    let _ = app.emit_to("main", "hydration_prompt", ());
 }
 
 #[tauri::command]
-fn undo_hydration(state: tauri::State<SharedState>, local_date: String) -> Result<HydrationSummary, String> {
+fn undo_hydration(app: AppHandle, state: tauri::State<SharedState>, local_date: String) -> Result<HydrationSummary, String> {
     let st = state.lock().unwrap();
-    hydration::undo_latest(&st.data_dir, &local_date)
+    let result = hydration::undo_latest(&st.data_dir, &local_date)?;
+    drop(st);
+    let _ = app.emit("hydration_data_changed", ());
+    Ok(result)
 }
 
 #[tauri::command]
-async fn set_hydration_panel_open(window: tauri::Window, state: tauri::State<'_, SharedState>, open: bool) -> Result<(), String> {
+async fn set_hydration_panel_open(window: tauri::Window, state: tauri::State<'_, SharedState>, open: bool, mode: Option<String>, source: Option<String>) -> Result<(), String> {
     let app = window.app_handle();
     state.lock().unwrap().hydration_panel_open = open;
     if !open {
@@ -673,13 +684,15 @@ async fn set_hydration_panel_open(window: tauri::Window, state: tauri::State<'_,
         }
         return Ok(());
     }
+    let mode = if mode.as_deref() == Some("diary") { "diary" } else { "hydration" };
+    let source = if source.as_deref() == Some("reminder") { "reminder" } else { "manual" };
     // Keep the pet's webview geometry unchanged. Only the side window moves.
     let pet = app.get_webview_window("main").ok_or("米奇窗口不存在")?;
     let panel = if let Some(panel) = app.get_webview_window("hydration-side") {
         panel
     } else {
-        tauri::WebviewWindowBuilder::new(app, "hydration-side", tauri::WebviewUrl::App("index.html?side=hydration".into()))
-            .title("米奇 · 喝水与记录").inner_size(270.0, 410.0)
+        tauri::WebviewWindowBuilder::new(app, "hydration-side", tauri::WebviewUrl::App(format!("index.html?side=hydration&panel={mode}&source={source}&v=1.3.0").into()))
+            .title("米奇 · 陪伴记录").inner_size(354.0, 640.0)
             .decorations(false).transparent(true).shadow(false)
             .resizable(false).always_on_top(true).skip_taskbar(true)
             .visible(false).build().map_err(|e| e.to_string())?
@@ -687,17 +700,26 @@ async fn set_hydration_panel_open(window: tauri::Window, state: tauri::State<'_,
     let pos = pet.outer_position().map_err(|e| e.to_string())?;
     let size = pet.outer_size().map_err(|e| e.to_string())?;
     let factor = pet.scale_factor().unwrap_or(1.0);
-    let mut x = pos.x as f64 - 278.0 * factor;
-    let mut y = pos.y as f64 + size.height as f64 - 410.0 * factor;
+    let width = 354.0;
+    let mut height = 640.0;
+    let mut x = pos.x as f64 - (width + 8.0) * factor;
+    let mut anchor = "right";
+    let mut y = pos.y as f64 + size.height as f64 - height * factor;
     if let Ok(Some(monitor)) = pet.current_monitor() {
         let origin = monitor.position();
         let screen = monitor.size();
+        height = height.min((screen.height as f64 / factor - 24.0).max(200.0));
         if x < origin.x as f64 {
             x = pos.x as f64 + size.width as f64 + 8.0 * factor;
+            anchor = "left";
         }
-        y = y.clamp(origin.y as f64, (origin.y as f64 + screen.height as f64 - 410.0 * factor).max(origin.y as f64));
+        x = x.clamp(origin.x as f64, (origin.x as f64 + screen.width as f64 - width * factor).max(origin.x as f64));
+        y = (pos.y as f64 + size.height as f64 - height * factor)
+            .clamp(origin.y as f64 + 8.0 * factor, (origin.y as f64 + screen.height as f64 - (height + 8.0) * factor).max(origin.y as f64 + 8.0 * factor));
     }
+    panel.set_size(LogicalSize::new(width, height)).map_err(|e| e.to_string())?;
+    panel.set_title(if mode == "diary" { "米奇 · 陪伴日记" } else { "米奇 · 喝水与记录" }).map_err(|e| e.to_string())?;
     panel.set_position(PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
-    let _ = app.emit_to("hydration-side", "hydration_side_open", ());
+    let _ = app.emit_to("hydration-side", "hydration_side_open", serde_json::json!({ "mode": mode, "anchor": anchor, "source": source }));
     panel.show().map_err(|e| e.to_string())
 }

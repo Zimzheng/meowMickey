@@ -28,6 +28,8 @@ jobs:
           workspaces: src-tauri
       - name: Test Windows core
         run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
+      - name: Test weekly summary
+        run: node --test tests/hydration-week.test.mjs
       - name: Build Chinese Windows installer
         shell: pwsh
         run: |
@@ -49,8 +51,12 @@ jobs:
           if ($bytes[0] -ne 0x4d -or $bytes[1] -ne 0x5a) { throw 'Installer is not a Windows executable' }
           Get-FileHash $asset -Algorithm SHA256
           gh release view "v$version" --repo $env:GITHUB_REPOSITORY
-          if ($LASTEXITCODE -ne 0) { throw 'Create the version release before publishing' }
-          gh release upload "v$version" $asset --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "v$version" --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "米奇 v$version" --notes-file "docs/RELEASE_$version.md"
+            if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed' }
+          }
+          # Replacing a published installer would invalidate its updater signature.
+          gh release upload "v$version" $asset --repo $env:GITHUB_REPOSITORY
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
       - uses: actions/upload-artifact@v4
         with:
