@@ -2,5 +2,14 @@
   "sneezeEveryMinutes": 30,
   "kneadEveryMinutes": 5,
   "singleClick": "kneading",
-  "doubleClick": "sneezing"
+  "doubleClick": "sneezing",
+  "behaviorEnabled": true,
+  "actionCooldownSeconds": 12,
+  "workBreakMinutes": 60,
+  "nightQuietEnabled": true,
+  "nightStartHour": 23,
+  "nightEndHour": 7,
+  "nightYawnMinutes": 90,
+  "hydrationEnabled": true,
+  "hydrationEveryMinutes": 60
 }

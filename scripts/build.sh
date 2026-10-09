@@ -15,15 +15,24 @@ case "$OS" in
 esac
 
 echo ">> building for $PLATFORM"
+# Keep one signing identity across releases. Never regenerate this key per build.
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -f "$ROOT/.local/updater.key" ]; then
+  export TAURI_SIGNING_PRIVATE_KEY="$ROOT/.local/updater.key"
+  export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}"
+fi
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+  echo "Missing TAURI_SIGNING_PRIVATE_KEY; see docs/UPDATES.md" >&2
+  exit 1
+fi
 cargo tauri build
 
 OUT="$ROOT/dist/$PLATFORM"
-rm -rf "$OUT"
+if [ -d "$OUT" ]; then mv "$OUT" "$OUT.backup.$(date +%Y%m%d-%H%M%S)"; fi
 mkdir -p "$OUT"
 
 case "$PLATFORM" in
   macos)
-    cp -R "target/release/bundle/macos/MickeyCompanion.app" "$OUT/"
+    cp -R "target/release/bundle/macos/米奇.app" "$OUT/"
     # Keep the editable rules beside the signed bundle. Never mutate the .app
     # after Tauri has signed it.
     cp "$ROOT/rules.json" "$OUT/rules.json"
@@ -32,7 +41,7 @@ case "$PLATFORM" in
     # Tauri's local bundle can contain only a linker signature. Re-sign the
     # complete copied bundle so CodeResources matches the final app contents.
     # Release distribution can replace '-' with a Developer ID identity.
-    codesign --force --deep --sign - "$OUT/MickeyCompanion.app"
+    codesign --force --deep --sign - "$OUT/米奇.app"
     ;;
   windows)
     if [ -d "target/release/bundle/msi" ]; then
@@ -53,6 +62,8 @@ case "$PLATFORM" in
     fi
     ;;
 esac
+
+python3 "$ROOT/scripts/prepare-update.py" --out "$OUT"
 
 echo ">> output in $OUT"
 ls -la "$OUT"

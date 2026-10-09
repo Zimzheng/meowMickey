@@ -1,5 +1,7 @@
 pub mod app;
+pub mod updater;
 pub mod config;
+pub mod hydration;
 pub mod timer;
 pub mod window_state;
 
@@ -13,6 +15,6 @@ mod tests {
 
     #[test]
     fn version_is_set() {
-        assert_eq!(version(), "1.1.0");
+        assert_eq!(version(), "1.2.5");
     }
 }

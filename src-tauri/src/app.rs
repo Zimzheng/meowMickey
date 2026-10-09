@@ -1,5 +1,6 @@
 use crate::config::{load_rules_from_paths, Action, Rules};
 use crate::timer::{Clock, Scheduler, SystemClock};
+use crate::hydration::{self, HydrationRecord, HydrationSummary};
 use crate::window_state::{self, WindowPosition};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub external_rules_path: PathBuf,
     pub bundled_rules_path: PathBuf,
     pub scale: f64,
+    pub hydration_panel_open: bool,
     // The tray menu is owned by the tray icon after construction, but we also
     // need to popup() it from other entry points (right-click handler,
     // show_context_menu command). Wrap in Arc so we can share a clone with the
@@ -41,6 +43,8 @@ pub fn run() -> tauri::Result<()> {
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
             let app_handle = app.handle().clone();
 
@@ -64,7 +68,17 @@ pub fn run() -> tauri::Result<()> {
 
             // Restore window state (position + scale) before building the tray menu,
             // so the menu can mark the current size.
-            let saved_state = window_state::load(&data_dir);
+            let saved_state = window_state::load(&data_dir).and_then(|mut saved| {
+                // Recover legacy/off-screen states that can leave a 50% pet nearly
+                // invisible. Version 1.2.0 could persist this value while the
+                // hydration panel was transitioning, so migrate it once to the
+                // normal size. Users can still choose another size afterward.
+                if saved.scale > 0.75 {
+                    saved.scale = (saved.scale * 0.5)
+                        .clamp(window_state::MIN_SCALE, window_state::MAX_SCALE);
+                }
+                Some(saved)
+            });
             let initial_scale = saved_state
                 .as_ref()
                 .map(|s| s.scale.clamp(window_state::MIN_SCALE, window_state::MAX_SCALE))
@@ -81,6 +95,7 @@ pub fn run() -> tauri::Result<()> {
                 external_rules_path: external_rules,
                 bundled_rules_path: bundled_rules,
                 scale: initial_scale,
+                hydration_panel_open: false,
                 tray_menu: menu_arc.clone(),
             }));
 
@@ -122,13 +137,21 @@ pub fn run() -> tauri::Result<()> {
                     SPRITE_W * initial_scale,
                     SPRITE_H * initial_scale,
                 ));
+                // Persist the clamped position and any legacy scale migration
+                // immediately so the next launch cannot revive the stale state.
+                let _ = window_state::save(&data_dir, WindowPosition {
+                    x: pos.x,
+                    y: pos.y,
+                    scale: initial_scale,
+                });
+                let _ = window.show();
             }
 
             // Build tray icon (the menu was already built above and cached on
             // AppState; we share the same Arc with the tray builder).
             let _tray = TrayIconBuilder::with_id("main-tray")
                 .icon(app_handle.default_window_icon().cloned().unwrap())
-                .icon_as_template(true)
+                .icon_as_template(false)
                 .menu(menu_arc.as_ref())
                 .show_menu_on_left_click(false)
                 .on_menu_event(move |app, event| {
@@ -231,8 +254,41 @@ pub fn run() -> tauri::Result<()> {
             set_scale,
             get_scale,
             set_local_hour,
+            record_hydration,
+            get_hydration_summary,
+            snooze_hydration,
+            show_hydration_panel,
+            undo_hydration,
+            set_hydration_panel_open,
+            copy_image_to_clipboard,
         ])
         .run(tauri::generate_context!())
+}
+
+#[tauri::command]
+fn copy_image_to_clipboard(data_url: String) -> Result<(), String> {
+    let encoded = data_url.split_once(',').map(|(_, value)| value).unwrap_or(&data_url);
+    let temp = std::env::temp_dir().join(format!("mickey-share-{}.png", std::process::id()));
+    #[cfg(target_os = "macos")]
+    {
+        let mut decode = std::process::Command::new("base64").args(["-D", "-o"]).arg(&temp).stdin(std::process::Stdio::piped()).spawn().map_err(|e| e.to_string())?;
+        use std::io::Write;
+        decode.stdin.as_mut().unwrap().write_all(encoded.as_bytes()).map_err(|e| e.to_string())?;
+        if !decode.wait().map_err(|e| e.to_string())?.success() { return Err("图片解码失败".into()); }
+        let script = format!("set the clipboard to (read POSIX file \"{}\" as «class PNGf»)" , temp.display());
+        let ok = std::process::Command::new("osascript").args(["-e", &script]).status().map_err(|e| e.to_string())?.success();
+        let _ = std::fs::remove_file(&temp); if ok { Ok(()) } else { Err("系统剪贴板不可用".into()) }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use std::io::Write;
+        let mut decode = std::process::Command::new("certutil").args(["-decode", "-f", "CON", temp.to_str().unwrap()]).stdin(std::process::Stdio::piped()).spawn().map_err(|e| e.to_string())?;
+        decode.stdin.as_mut().unwrap().write_all(encoded.as_bytes()).map_err(|e| e.to_string())?; let _ = decode.wait();
+        let script = format!("Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $i=[Drawing.Image]::FromFile('{}'); [Windows.Forms.Clipboard]::SetImage($i)", temp.display());
+        let ok = std::process::Command::new("powershell").args(["-NoProfile", "-Command", &script]).status().map_err(|e| e.to_string())?.success(); let _ = std::fs::remove_file(&temp); if ok { Ok(()) } else { Err("系统剪贴板不可用".into()) }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    { let _ = encoded; Err("当前系统暂不支持图片剪贴板".into()) }
 }
 
 fn locate_external_rules(data_dir: &std::path::Path, bundled_rules: &std::path::Path) -> PathBuf {
@@ -285,8 +341,11 @@ fn build_tray_menu(
     let knead = MenuItem::with_id(app, "knead", "踩奶", true, None::<&str>)?;
     let head_tilt = MenuItem::with_id(app, "headtilt", "好奇歪头", true, None::<&str>)?;
     let stretch = MenuItem::with_id(app, "stretch", "伸懒腰", true, None::<&str>)?;
+    let hydration = MenuItem::with_id(app, "hydration", "喝水与记录", true, None::<&str>)?;
+    let hydration_undo = MenuItem::with_id(app, "hydration_undo", "撤销最近一次喝水", true, None::<&str>)?;
     let sep1 = PredefinedMenuItem::separator(app)?;
     let reload = MenuItem::with_id(app, "reload", "重新加载规则", true, None::<&str>)?;
+    let update_version = MenuItem::with_id(app, "update_version", "更新米奇版本", true, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "打开规则文件", true, None::<&str>)?;
     let pause = MenuItem::with_id(app, "pause", "暂停／继续定时动作", true, None::<&str>)?;
 
@@ -314,7 +373,7 @@ fn build_tray_menu(
     let quit = MenuItem::with_id(app, "quit", "退出米奇", true, None::<&str>)?;
     Menu::with_items(
         app,
-        &[&sneeze, &knead, &head_tilt, &stretch, &sep1, &reload, &open, &pause, &size_submenu, &sep2, &quit],
+        &[&sneeze, &knead, &head_tilt, &stretch, &hydration, &hydration_undo, &sep1, &reload, &update_version, &open, &pause, &size_submenu, &sep2, &quit],
     )
     // keep `current_scale` referenced so the linter doesn't complain;
     // it's used in handle_menu_event for the ✓ indicator (future work).
@@ -343,6 +402,11 @@ fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
         }
         "headtilt" => emit_sequence(app, vec![Action::HeadTilt]),
         "stretch" => emit_sequence(app, vec![Action::Stretching]),
+        "hydration" => {
+            let _ = app.emit("hydration_prompt", ());
+        }
+        "hydration_undo" => { let _ = app.emit("hydration_undo_request", ()); }
+        "update_version" => crate::updater::start(app),
         "reload" => {
             reload_rules_into(app);
         }
@@ -411,9 +475,9 @@ fn parse_size_id(id: &str) -> Option<f64> {
     if let Some((whole, frac)) = digits.split_once('_') {
         let w: f64 = whole.parse().ok()?;
         let f: f64 = format!("0.{}", frac).parse().ok()?;
-        Some(w + f)
+        Some((w + f) * 0.5)
     } else {
-        digits.parse().ok()
+        digits.parse::<f64>().ok().map(|v| v * 0.5)
     }
 }
 
@@ -552,4 +616,88 @@ fn get_scale(state: tauri::State<SharedState>) -> f64 {
 #[tauri::command]
 fn set_local_hour(state: tauri::State<SharedState>, hour: u8) {
     state.lock().unwrap().scheduler.set_local_hour(hour);
+}
+
+#[tauri::command]
+fn record_hydration(
+    app: AppHandle,
+    state: tauri::State<SharedState>,
+    amount_ml: u32,
+    recorded_at_ms: u64,
+    local_date: String,
+    local_time: String,
+    source: String,
+) -> Result<HydrationSummary, String> {
+    let (data_dir, id) = {
+        let mut st = state.lock().unwrap();
+        st.scheduler.reset_hydration(&SystemClock, None);
+        (st.data_dir.clone(), format!("{}-{}", recorded_at_ms, amount_ml))
+    };
+    let result = hydration::append(&data_dir, HydrationRecord {
+        id, amount_ml, recorded_at_ms, local_date, local_time,
+        source: if source == "manual" { "manual".into() } else { "reminder".into() },
+    })?;
+    emit_sequence(&app, vec![Action::Drinking, Action::Contented]);
+    Ok(result)
+}
+
+#[tauri::command]
+fn get_hydration_summary(state: tauri::State<SharedState>, local_date: String) -> HydrationSummary {
+    let st = state.lock().unwrap();
+    hydration::summary(&hydration::load(&st.data_dir), &local_date)
+}
+
+#[tauri::command]
+fn snooze_hydration(state: tauri::State<SharedState>, minutes: Option<f64>) {
+    state.lock().unwrap().scheduler.reset_hydration(&SystemClock, minutes.or(Some(10.0)));
+}
+
+#[tauri::command]
+fn show_hydration_panel(app: AppHandle) {
+    let _ = app.emit("hydration_prompt", ());
+}
+
+#[tauri::command]
+fn undo_hydration(state: tauri::State<SharedState>, local_date: String) -> Result<HydrationSummary, String> {
+    let st = state.lock().unwrap();
+    hydration::undo_latest(&st.data_dir, &local_date)
+}
+
+#[tauri::command]
+async fn set_hydration_panel_open(window: tauri::Window, state: tauri::State<'_, SharedState>, open: bool) -> Result<(), String> {
+    let app = window.app_handle();
+    state.lock().unwrap().hydration_panel_open = open;
+    if !open {
+        if let Some(panel) = app.get_webview_window("hydration-side") {
+            panel.hide().map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
+    // Keep the pet's webview geometry unchanged. Only the side window moves.
+    let pet = app.get_webview_window("main").ok_or("米奇窗口不存在")?;
+    let panel = if let Some(panel) = app.get_webview_window("hydration-side") {
+        panel
+    } else {
+        tauri::WebviewWindowBuilder::new(app, "hydration-side", tauri::WebviewUrl::App("index.html?side=hydration".into()))
+            .title("米奇 · 喝水与记录").inner_size(270.0, 410.0)
+            .decorations(false).transparent(true).shadow(false)
+            .resizable(false).always_on_top(true).skip_taskbar(true)
+            .visible(false).build().map_err(|e| e.to_string())?
+    };
+    let pos = pet.outer_position().map_err(|e| e.to_string())?;
+    let size = pet.outer_size().map_err(|e| e.to_string())?;
+    let factor = pet.scale_factor().unwrap_or(1.0);
+    let mut x = pos.x as f64 - 278.0 * factor;
+    let mut y = pos.y as f64 + size.height as f64 - 410.0 * factor;
+    if let Ok(Some(monitor)) = pet.current_monitor() {
+        let origin = monitor.position();
+        let screen = monitor.size();
+        if x < origin.x as f64 {
+            x = pos.x as f64 + size.width as f64 + 8.0 * factor;
+        }
+        y = y.clamp(origin.y as f64, (origin.y as f64 + screen.height as f64 - 410.0 * factor).max(origin.y as f64));
+    }
+    panel.set_position(PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+    let _ = app.emit_to("hydration-side", "hydration_side_open", ());
+    panel.show().map_err(|e| e.to_string())
 }

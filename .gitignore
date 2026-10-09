@@ -23,3 +23,6 @@ Thumbs.db
 
 # SDD workspace (one dir per plan)
 .superpowers/
+
+# Local update signing credentials (never commit)
+.local/

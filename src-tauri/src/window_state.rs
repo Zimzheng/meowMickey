@@ -8,9 +8,9 @@ pub const SPRITE_WIDTH: f64 = 192.0;
 pub const SPRITE_HEIGHT: f64 = 208.0;
 pub const MARGIN_RIGHT: f64 = 35.0;
 pub const MARGIN_BOTTOM: f64 = 55.0;
-pub const MIN_SCALE: f64 = 0.5;
-pub const MAX_SCALE: f64 = 2.0;
-pub const DEFAULT_SCALE: f64 = 1.0;
+pub const MIN_SCALE: f64 = 0.25;
+pub const MAX_SCALE: f64 = 1.0;
+pub const DEFAULT_SCALE: f64 = 0.5;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
 pub struct WindowPosition {
@@ -93,7 +93,7 @@ mod tests {
         let p = default_position(1920.0, 1080.0);
         assert_eq!(p.x, 1920.0 - 192.0 - 35.0);
         assert_eq!(p.y, 55.0);
-        assert_eq!(p.scale, 1.0);
+        assert_eq!(p.scale, 0.5);
     }
 
     #[test]
@@ -150,7 +150,7 @@ mod tests {
         let loaded = load(dir.path()).unwrap();
         assert_eq!(loaded.x, 100.0);
         assert_eq!(loaded.y, 200.0);
-        assert_eq!(loaded.scale, 1.0); // serde default
+        assert_eq!(loaded.scale, 0.5); // serde default
     }
 
     #[test]

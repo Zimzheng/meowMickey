@@ -3,11 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>米奇桌宠</title>
+  <title>米奇</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="sprite"></div>
-  <script type="module" src="main.js"></script>
+  <div id="hydration" class="hydration" hidden aria-live="polite">
+    <button id="hydration-close" class="hydration-close" aria-label="关闭">×</button>
+    <p id="hydration-message" class="hydration-message">米奇口渴啦，一起喝水吧！</p>
+    <p id="hydration-today" class="hydration-today">今天已喝 0 ml</p>
+    <div class="hydration-presets" aria-label="记录喝水量">
+      <button data-ml="200">200</button><button data-ml="300">300</button><button data-ml="500">500</button>
+    </div>
+    <form id="hydration-form" class="hydration-form">
+      <input id="hydration-amount" type="number" min="10" max="3000" step="10" inputmode="numeric" placeholder="自定义" aria-label="饮水量，毫升">
+      <span>ml</span><button type="submit">记录</button>
+    </form>
+    <button id="hydration-snooze" class="hydration-snooze">10 分钟后提醒</button>
+    <button id="hydration-undo" class="hydration-undo" hidden>撤销本次记录</button>
+  <button id="diary-share" class="diary-share" hidden>分享今天的米奇记录</button>
+  </div>
+  <div id="companion-bubble" class="companion-bubble" hidden aria-live="polite">
+    <button id="companion-close" class="companion-close" aria-label="关闭">×</button>
+    <div id="companion-text"></div>
+    <div class="companion-actions"><button id="companion-primary">一起喝水</button><button id="companion-snooze">稍后</button></div>
+  </div>
+  <div id="share-preview" class="share-preview" hidden>
+    <div class="share-card-modal">
+      <button id="share-preview-close" class="share-preview-close" aria-label="关闭">×</button>
+      <p class="share-preview-title">米奇陪伴日记</p>
+      <img id="share-preview-image" alt="米奇陪伴日记分享图片">
+      <div class="share-preview-actions"><button id="share-copy-image">复制图片</button><button id="share-copy-text">复制文字</button></div>
+    </div>
+  </div>
+  <div id="toast" class="toast" hidden aria-live="polite"><span id="toast-message"></span><button id="toast-undo" hidden>撤销</button></div>
+  <div id="sprite" aria-label="米奇桌宠"></div>
+  <script type="module" src="main-v121.js"></script>
 </body>
 </html>

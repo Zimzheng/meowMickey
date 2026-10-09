@@ -5,12 +5,15 @@ A floating desktop pet that performs idle animations, sneezing, and kneading on 
 ## Features
 
 - **Floating, transparent, always-on-top** window — sits anywhere on your desktop
-- **Eight animations**: idle, sneezing, kneading, nose rubbing, contented resting, curious head tilt, yawning, and stretching
+- **Ten animations**: the original eight plus thirsty and happy drinking actions
+- **Hydration companion**: daytime reminders, 200/300/500 ml shortcuts, custom amounts, and immediate daily totals
+- **Private local history**: every water entry stores amount, local date/time, timestamp, and source for future daily summaries
 - **Natural action chains**: sneeze → rub nose; knead → settle down contentedly
 - **Context-aware behavior**: work-break stretching, quiet nighttime behavior, and rapid-click reactions
 - **Timer-driven**: defaults to sneeze every 30 min, knead every 5 min (configurable)
 - **Click & drag**: single-click = knead, double-click = sneeze, drag = move window (native AppKit drag, silky smooth)
 - **Resizable**: 50% / 75% / 100% / 125% / 150% / 200% via tray submenu. Size persists across restarts.
+- **Display recovery**: suspicious legacy 50% positions above the visible desktop reset to the primary screen automatically.
 - **Right-click the cat** for the full menu; left-click 🐾 in the menu bar to reveal Mickey if hidden
 - **No window chrome**: lives on the desktop, doesn't appear in the Dock or taskbar
 
@@ -43,15 +46,15 @@ This runs `cargo tauri dev` from `src-tauri/`. Hot-reloads both Rust and `ui/` f
 ```
 
 Outputs to `dist/<os>/`:
-- macOS: `MickeyCompanion.app` + `启动米奇.command`
-- Windows: `MickeyCompanion.exe` (NSIS installer) and/or `.msi` + `启动米奇.bat`
+- macOS: `米奇.app` + `启动米奇.command`
+- Windows: `米奇`（NSIS 安装程序） and/or `.msi` + `启动米奇.bat`
 
 ## Running
 
 After building, double-click the launcher in `dist/<os>/`, or:
 
 ```bash
-open dist/macos/MickeyCompanion.app            # macOS
+open dist/macos/米奇.app            # macOS
 dist/windows/启动米奇.bat                     # Windows
 ```
 
@@ -62,7 +65,7 @@ cd src-tauri
 cargo test --lib
 ```
 
-Covers `config`, `window_state`, and `timer` modules — 30 tests including behavior sequences, night mode, work breaks, and backward compatibility.
+Covers configuration, hydration storage, window state, and scheduling — 33 tests including reminders, undo, night mode, work breaks, and backward compatibility.
 
 ## Configuration
 
@@ -80,7 +83,9 @@ Covers `config`, `window_state`, and `timer` modules — 30 tests including beha
   "nightQuietEnabled": true,
   "nightStartHour": 23,
   "nightEndHour": 7,
-  "nightYawnMinutes": 90
+  "nightYawnMinutes": 90,
+  "hydrationEnabled": true,
+  "hydrationEveryMinutes": 60
 }
 ```
 
@@ -99,6 +104,7 @@ user application-data directory.
 | 踩奶 | Knead animation (one cycle, then back to idle) |
 | 好奇歪头 | Play the curious rapid-click reaction |
 | 伸懒腰 | Play the work-break stretch |
+| 喝水与记录 | Open the hydration card and record a drink |
 | 重新加载规则 | Re-read `rules.json` from disk |
 | 打开规则文件 | Open `rules.json` in default editor |
 | 暂停／继续定时动作 | Pause/resume the timer |
@@ -111,3 +117,8 @@ user application-data directory.
   requires a Developer ID signature and Apple notarization.
 - Not notarized. Internal use only — see spec §1.2.
 - Mickey's sprite assets are checked in as PNGs (192×208 per frame, 6 frames per action).
+
+## 应用内版本更新
+
+右键米奇 → **更新米奇版本**，检查 GitHub 正式发布的新版；确认后下载、验证签名、安装并重启。
+更新包的构建与发布步骤见 [版本更新说明](docs/UPDATES.md)。

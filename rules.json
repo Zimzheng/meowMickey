@@ -9,5 +9,7 @@
   "nightQuietEnabled": true,
   "nightStartHour": 23,
   "nightEndHour": 7,
-  "nightYawnMinutes": 90
+  "nightYawnMinutes": 90,
+  "hydrationEnabled": true,
+  "hydrationEveryMinutes": 60
 }

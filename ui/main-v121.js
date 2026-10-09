@@ -1,5 +1,5 @@
 import { layoutDiaryDetails } from './diary-layout.js';
-import { SpriteSheet } from './sprite.js';
+import { SpriteSheet } from './sprite-v121.js';
 import { installMouseHandling } from './mouse.js';
 
 const tauri = window.__TAURI__;

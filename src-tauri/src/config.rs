@@ -22,6 +22,10 @@ pub struct Rules {
     pub night_end_hour: u8,
     #[serde(default = "default_night_yawn_minutes")]
     pub night_yawn_minutes: f64,
+    #[serde(default = "default_true")]
+    pub hydration_enabled: bool,
+    #[serde(default = "default_hydration_minutes")]
+    pub hydration_every_minutes: f64,
 }
 
 fn default_true() -> bool {
@@ -42,6 +46,7 @@ fn default_night_end_hour() -> u8 {
 fn default_night_yawn_minutes() -> f64 {
     90.0
 }
+fn default_hydration_minutes() -> f64 { 60.0 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Action {
@@ -53,6 +58,8 @@ pub enum Action {
     HeadTilt,
     Yawning,
     Stretching,
+    Thirsty,
+    Drinking,
 }
 
 impl Action {
@@ -66,6 +73,8 @@ impl Action {
             Action::HeadTilt => "headtilt",
             Action::Yawning => "yawning",
             Action::Stretching => "stretching",
+            Action::Thirsty => "thirsty",
+            Action::Drinking => "drinking",
         }
     }
 
@@ -79,6 +88,8 @@ impl Action {
             "headtilt" => Some(Action::HeadTilt),
             "yawning" => Some(Action::Yawning),
             "stretching" => Some(Action::Stretching),
+            "thirsty" => Some(Action::Thirsty),
+            "drinking" => Some(Action::Drinking),
             _ => None,
         }
     }
@@ -98,6 +109,8 @@ impl Rules {
             night_start_hour: default_night_start_hour(),
             night_end_hour: default_night_end_hour(),
             night_yawn_minutes: default_night_yawn_minutes(),
+            hydration_enabled: true,
+            hydration_every_minutes: default_hydration_minutes(),
         }
     }
 
@@ -121,6 +134,7 @@ impl Rules {
         self.action_cooldown_seconds = valid_seconds(self.action_cooldown_seconds, 12.0);
         self.work_break_minutes = valid_interval(self.work_break_minutes, 60.0);
         self.night_yawn_minutes = valid_interval(self.night_yawn_minutes, 90.0);
+        self.hydration_every_minutes = valid_interval(self.hydration_every_minutes, 60.0);
         self.night_start_hour = self.night_start_hour.min(23);
         self.night_end_hour = self.night_end_hour.min(23);
         self

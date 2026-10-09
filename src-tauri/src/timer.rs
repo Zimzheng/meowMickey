@@ -41,6 +41,7 @@ pub struct Scheduler {
     next_knead_at: Duration,
     next_stretch_at: Duration,
     next_yawn_at: Duration,
+    next_hydration_at: Duration,
     last_auto_at: Option<Duration>,
     local_hour: u8,
     paused: bool,
@@ -53,12 +54,14 @@ impl Scheduler {
         let knead_in = rules.knead_every_minutes.max(1.0) * 60.0;
         let stretch_in = rules.work_break_minutes.max(1.0) * 60.0;
         let yawn_in = rules.night_yawn_minutes.max(1.0) * 60.0;
+        let hydration_in = rules.hydration_every_minutes.max(1.0) * 60.0;
         Self {
             rules,
             next_sneeze_at: now + Duration::from_secs_f64(sneeze_in),
             next_knead_at: now + Duration::from_secs_f64(knead_in),
             next_stretch_at: now + Duration::from_secs_f64(stretch_in),
             next_yawn_at: now + Duration::from_secs_f64(yawn_in),
+            next_hydration_at: now + Duration::from_secs_f64(hydration_in),
             last_auto_at: None,
             local_hour: 12,
             paused: false,
@@ -75,6 +78,11 @@ impl Scheduler {
             return None;
         }
         let is_night = self.is_night();
+        if self.rules.hydration_enabled && !is_night && now >= self.next_hydration_at {
+            self.next_hydration_at = now + Duration::from_secs_f64(self.rules.hydration_every_minutes * 60.0);
+            self.last_auto_at = Some(now);
+            return Some(vec![Action::Thirsty]);
+        }
         if self.rules.behavior_enabled && self.rules.night_quiet_enabled && is_night {
             if now >= self.next_yawn_at {
                 self.next_yawn_at = now + Duration::from_secs_f64(self.rules.night_yawn_minutes * 60.0);
@@ -147,7 +155,7 @@ impl Scheduler {
                     + Duration::from_secs_f64(self.rules.knead_every_minutes.max(1.0) * 60.0);
             }
             Action::Idle | Action::RubNose | Action::Contented | Action::HeadTilt
-            | Action::Yawning | Action::Stretching => {}
+            | Action::Yawning | Action::Stretching | Action::Thirsty | Action::Drinking => {}
         }
     }
 
@@ -172,6 +180,13 @@ impl Scheduler {
             + Duration::from_secs_f64(self.rules.work_break_minutes.max(1.0) * 60.0);
         self.next_yawn_at = now
             + Duration::from_secs_f64(self.rules.night_yawn_minutes.max(1.0) * 60.0);
+        self.next_hydration_at = now
+            + Duration::from_secs_f64(self.rules.hydration_every_minutes.max(1.0) * 60.0);
+    }
+
+    pub fn reset_hydration(&mut self, clock: &dyn Clock, minutes: Option<f64>) {
+        let interval = minutes.unwrap_or(self.rules.hydration_every_minutes).clamp(1.0, 720.0);
+        self.next_hydration_at = clock.now() + Duration::from_secs_f64(interval * 60.0);
     }
 }
 
@@ -307,5 +322,28 @@ mod tests {
         s.set_local_hour(12);
         clock.advance(60.0);
         assert_eq!(s.tick(&clock), Some(vec![Action::Stretching]));
+    }
+
+    #[test]
+    fn hydration_reminder_fires_during_day() {
+        let clock = ManualClock::new(Duration::ZERO);
+        let mut r = rules(30.0, 30.0);
+        r.hydration_every_minutes = 1.0;
+        let mut s = Scheduler::new(r, &clock);
+        s.set_local_hour(12);
+        clock.advance(60.0);
+        assert_eq!(s.tick(&clock), Some(vec![Action::Thirsty]));
+    }
+
+    #[test]
+    fn hydration_reminder_is_quiet_at_night() {
+        let clock = ManualClock::new(Duration::ZERO);
+        let mut r = rules(30.0, 30.0);
+        r.hydration_every_minutes = 1.0;
+        r.night_yawn_minutes = 90.0;
+        let mut s = Scheduler::new(r, &clock);
+        s.set_local_hour(23);
+        clock.advance(60.0);
+        assert_eq!(s.tick(&clock), None);
     }
 }
