@@ -36,3 +36,8 @@ test('cancel, focus loss and right-click cancel pending left clicks', async () =
     const s=await setup();s.click();s.send(name);s.flush();assert.deepEqual(s.actions,name==='contextmenu'?['RightClick']:[]);
   }
 });
+
+test('second press cancels single-click timeout until release', async () => {
+  const s=await setup();s.click();s.send('pointerdown');s.flush();assert.deepEqual(s.actions,[]);
+  s.send('pointerup');s.flush();assert.deepEqual(s.actions,['DoubleClick']);
+});

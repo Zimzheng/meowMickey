@@ -20,6 +20,8 @@ export function installMouseHandling(element, { onSingleClick, onDoubleClick, on
 
   element.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || event.isPrimary === false) return;
+    clearTimeout(pendingClick);
+    pendingClick = null;
     press = { x: event.screenX, y: event.screenY, id: event.pointerId, dragging: false };
     element.setPointerCapture?.(event.pointerId);
   });
