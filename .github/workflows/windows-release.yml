@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: windows-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -56,7 +56,12 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed' }
           }
           # Replacing a published installer would invalidate its updater signature.
-          gh release upload "v$version" $asset --repo $env:GITHUB_REPOSITORY
+          $draft = gh release view "v$version" --repo $env:GITHUB_REPOSITORY --json isDraft --jq .isDraft
+          if ($draft -eq "true") {
+            gh release upload "v$version" $asset --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release upload "v$version" $asset --repo $env:GITHUB_REPOSITORY
+          }
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
       - uses: actions/upload-artifact@v4
         with:
