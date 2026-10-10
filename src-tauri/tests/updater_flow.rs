@@ -35,7 +35,7 @@ fn serve(version: &str, signature: &str, package: Vec<u8>, requests: usize) -> S
 fn test_app(endpoint: &str) -> tauri::App<tauri::test::MockRuntime> {
     let config: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
     let mut context = tauri::test::mock_context(tauri::test::noop_assets());
-    context.package_info_mut().version = "1.3.0".parse().unwrap();
+    context.package_info_mut().version = "1.3.1".parse().unwrap();
     context.config_mut().plugins.0.insert("updater".into(), serde_json::json!({
         // Local HTTP is enabled ONLY in this mock; shipped configuration enforces HTTPS.
         "dangerousInsecureTransportProtocol": true,

@@ -1,67 +1,67 @@
 const tauri = window.__TAURI__;
 const invoke = tauri?.core?.invoke || tauri?.invoke;
-const DRAG_THRESHOLD = 3;
-const CLICK_DELAY_MS = 250;
+const DRAG_THRESHOLD = 4;
+const CLICK_DELAY_MS = 300;
 
 export function installMouseHandling(element, { onSingleClick, onDoubleClick, onRapidClick, onRightClick }) {
-  let dragStartClient = null;
-  let moved = false;
-  let pendingSingleClick = null;
+  let press = null;
+  let pendingClick = null;
+  let clickCount = 0;
 
-  const dpr = window.devicePixelRatio || 1;
+  const cancelClicks = () => {
+    clearTimeout(pendingClick);
+    pendingClick = null;
+    clickCount = 0;
+  };
+  const finishDrag = () => {
+    press = null;
+    invoke?.('end_drag').catch(() => {});
+  };
 
-  element.addEventListener('mousedown', (event) => {
-    if (event.button !== 0) return;
-    dragStartClient = { x: event.clientX, y: event.clientY };
-    moved = false;
-    if (invoke) {
-      // Hand the drag off to AppKit — it handles all subsequent window movement
-      // directly, no IPC roundtrip per mousemove.
-      invoke('native_drag').catch(() => {});
-    }
+  element.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || event.isPrimary === false) return;
+    press = { x: event.screenX, y: event.screenY, id: event.pointerId, dragging: false };
+    element.setPointerCapture?.(event.pointerId);
   });
 
-  element.addEventListener('mousemove', (event) => {
-    if (!dragStartClient) return;
-    // AppKit is already moving the window. We only track distance locally
-    // to disambiguate click vs drag — no IPC, no set_position here.
-    const dx = (event.clientX - dragStartClient.x) * dpr;
-    const dy = (event.clientY - dragStartClient.y) * dpr;
-    const dist = Math.abs(dx) + Math.abs(dy);
-    if (!moved && dist > DRAG_THRESHOLD) {
-      moved = true;
-    }
+  element.addEventListener('pointermove', (event) => {
+    if (!press || press.id !== event.pointerId || press.dragging) return;
+    // Starting a native drag on pointerdown consumes mouseup in Windows WebView2.
+    // Screen coordinates remain stable when the window itself moves.
+    if (Math.hypot(event.screenX - press.x, event.screenY - press.y) <= DRAG_THRESHOLD) return;
+    press.dragging = true;
+    cancelClicks();
+    if (element.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
+    if (invoke) invoke('native_drag').catch(() => {}).finally(finishDrag);
   });
 
-  element.addEventListener('mouseup', (event) => {
-    if (event.button !== 0) return;
-    const wasDragging = moved;
-    dragStartClient = null;
-    moved = false;
-    if (invoke) {
-      // Save the window's current position (whatever AppKit landed it at).
-      invoke('end_drag').catch(() => {});
-    }
-    if (wasDragging) return;
-    if (event.detail >= 3) {
-      if (pendingSingleClick) { clearTimeout(pendingSingleClick); pendingSingleClick = null; }
-      onRapidClick && onRapidClick();
-      return;
-    }
-    if (event.detail === 2) {
-      if (pendingSingleClick) { clearTimeout(pendingSingleClick); pendingSingleClick = null; }
-      onDoubleClick && onDoubleClick();
-      return;
-    }
-    if (pendingSingleClick) clearTimeout(pendingSingleClick);
-    pendingSingleClick = setTimeout(() => {
-      pendingSingleClick = null;
-      onSingleClick && onSingleClick();
+  element.addEventListener('pointerup', (event) => {
+    if (event.button !== 0 || !press || press.id !== event.pointerId) return;
+    const dragging = press.dragging;
+    press = null;
+    if (element.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
+    if (dragging) { finishDrag(); return; }
+    // Count completed clicks ourselves: native WebViews differ in event.detail.
+    clearTimeout(pendingClick);
+    clickCount += 1;
+    pendingClick = setTimeout(() => {
+      const count = clickCount;
+      pendingClick = null;
+      clickCount = 0;
+      if (count >= 3) onRapidClick?.();
+      else if (count === 2) onDoubleClick?.();
+      else onSingleClick?.();
     }, CLICK_DELAY_MS);
   });
 
+  element.addEventListener('pointercancel', () => { cancelClicks(); finishDrag(); });
+  element.addEventListener('lostpointercapture', () => {
+    if (press && !press.dragging) { cancelClicks(); press = null; }
+  });
+  window.addEventListener('blur', () => { cancelClicks(); press = null; });
   element.addEventListener('contextmenu', (event) => {
     event.preventDefault();
-    onRightClick && onRightClick();
+    cancelClicks();
+    onRightClick?.();
   });
 }

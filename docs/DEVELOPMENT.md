@@ -73,14 +73,14 @@ macOS 更新集成测试：
 cargo test --locked --manifest-path src-tauri/Cargo.toml --test updater_flow
 ```
 
-v1.3.0 已通过 36 项核心测试和 macOS 更新集成测试；Windows 核心测试及正式构建通过。Windows 原生交互体验仍需在 Windows 桌面环境中人工验收。
+v1.3.1 已通过 36 项核心测试和 macOS 更新集成测试；Windows 核心测试及正式构建通过。Windows 原生交互体验仍需在 Windows 桌面环境中人工验收。
 
 改动后至少检查：启动及拖动、右键菜单、记录及撤销喝水、完整动画、日记明细换行、图片与文字复制、关闭弹窗后的残留、重启后记录，以及新版检查。
 
 ## 产品与架构资料
 
 - [产品架构](PRODUCT_ARCHITECTURE.md)
-- [v1.3.0 发布说明](RELEASE_1.3.0.md)
+- [v1.3.1 发布说明](RELEASE_1.3.1.md)
 - [早期迁移设计](superpowers/specs/2026-09-18-mickey-tauri-port-design.md)（历史资料，当前行为以代码和发布版为准）
 
 七天总结的前端测试（安装 Node.js 后执行）：

@@ -4,11 +4,11 @@
 
 A desktop cat that asks for a little attention, reminds you to drink water, and turns your local water and interaction records into a shareable companion diary.
 
-**[Download for macOS](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip)** · **[Download for Windows](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe)** · [All releases](https://github.com/Zimzheng/meowMickey/releases) · [Report an issue](https://github.com/Zimzheng/meowMickey/issues)
+**[Download for macOS](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-macOS-arm64-v1.3.1.zip)** · **[Download for Windows](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-v1.3.1-windows-x86_64-setup.exe)** · [All releases](https://github.com/Zimzheng/meowMickey/releases) · [Report an issue](https://github.com/Zimzheng/meowMickey/issues)
 
 | A little company | A drink together |
 | :---: | :---: |
-| [![Mickey's idle animation](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) | [![Mickey's complete six-frame drinking animation](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) |
+| [![Mickey's idle animation](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1) | [![Mickey's complete six-frame drinking animation](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1) |
 
 These GIFs use the application's actual sprite assets and frame timings. The light blue background is for the preview; Mickey's installed window is transparent. Click either animation to open the release page.
 
@@ -23,18 +23,18 @@ These GIFs use the application's actual sprite assets and frame timings. The lig
 
 ### Seven-day water trends
 
-[![Seven-day chart, summary, and daily entries using fictional demo data](docs/assets/hydration-week-demo.jpg)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0)
+[![Seven-day chart, summary, and daily entries using fictional demo data](docs/assets/hydration-week-demo.jpg)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1)
 
 This preview uses fictional records. The window covers today and the preceding six local calendar dates, using your existing history. Summaries are generated on your computer.
 
 ## Download and install
 
-Current release: **v1.3.0**. Install a release package directly; Rust and Node.js are not required. The application's interface and Windows installer are currently in Chinese.
+Current release: **v1.3.1**. Install a release package directly; Rust and Node.js are not required. The application's interface and Windows installer are currently in Chinese.
 
 | Platform | Download | Installation |
 | --- | --- | --- |
-| macOS · Apple Silicon (M series) | [ZIP package](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip) | Extract, move `米奇.app` to Applications, and open it |
-| Windows 10 / 11 · x64 | [EXE installer](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe) | Follow the Chinese installer; it installs for the current user and downloads WebView2 if needed |
+| macOS · Apple Silicon (M series) | [ZIP package](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-macOS-arm64-v1.3.1.zip) | Extract, move `米奇.app` to Applications, and open it |
+| Windows 10 / 11 · x64 | [EXE installer](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-v1.3.1-windows-x86_64-setup.exe) | Follow the Chinese installer; it installs for the current user and downloads WebView2 if needed |
 
 Native Intel Mac and Windows ARM installers are not currently available. The macOS package is ad hoc signed and has not been notarized by Apple, so the system may display an unverified-developer notice. Please report installation issues with your OS version in [Issues](https://github.com/Zimzheng/meowMickey/issues).
 
@@ -105,7 +105,7 @@ cargo install tauri-cli --version 2.11.4 --locked
 cargo tauri dev
 ```
 
-See the [development guide (Chinese)](docs/DEVELOPMENT.md) for prerequisites, macOS / Windows packaging commands, and checks. See [1.3.0 release notes (Chinese)](docs/RELEASE_1.3.0.md) for this update. Signing and publishing the combined update manifest are covered in [update documentation (Chinese)](docs/UPDATES.md).
+See the [development guide (Chinese)](docs/DEVELOPMENT.md) for prerequisites, macOS / Windows packaging commands, and checks. See [1.3.1 release notes (Chinese)](docs/RELEASE_1.3.1.md) for this update. Signing and publishing the combined update manifest are covered in [update documentation (Chinese)](docs/UPDATES.md).
 
 | Directory | Purpose |
 | --- | --- |

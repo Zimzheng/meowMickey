@@ -4,11 +4,11 @@
 
 一只会撒娇、提醒你喝水的小猫，把日常互动和喝水记录留在你的电脑里，还能生成带着米奇的陪伴日记。
 
-**[下载 macOS 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip)** · **[下载 Windows 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe)** · [全部版本](https://github.com/Zimzheng/meowMickey/releases) · [反馈问题](https://github.com/Zimzheng/meowMickey/issues)
+**[下载 macOS 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-macOS-arm64-v1.3.1.zip)** · **[下载 Windows 版](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-v1.3.1-windows-x86_64-setup.exe)** · [全部版本](https://github.com/Zimzheng/meowMickey/releases) · [反馈问题](https://github.com/Zimzheng/meowMickey/issues)
 
 | 米奇陪着你 | 和米奇一起喝水 |
 | :---: | :---: |
-| [![米奇待机动画](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) | [![米奇完整六帧喝水动画](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0) |
+| [![米奇待机动画](docs/assets/mickey-idle.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1) | [![米奇完整六帧喝水动画](docs/assets/mickey-drinking.gif)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1) |
 
 以上 GIF 使用应用内的实际动画素材和逐帧时长，浅蓝背景用于演示；安装后，米奇的窗口背景是透明的。点击动画进入下载页。
 
@@ -23,18 +23,18 @@
 
 ### 近7天喝水趋势
 
-[![近7天趋势、总结和当天明细（虚构演示数据）](docs/assets/hydration-week-demo.jpg)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.0)
+[![近7天趋势、总结和当天明细（虚构演示数据）](docs/assets/hydration-week-demo.jpg)](https://github.com/Zimzheng/meowMickey/releases/tag/v1.3.1)
 
 上图使用虚构演示记录。统计窗口为本地日期的今天及此前6天，原有历史记录会继续使用；总结在本机生成。
 
 ## 下载与安装
 
-当前发布版本：**v1.3.0**。直接下载安装包即可使用，无需安装 Rust 或 Node.js。
+当前发布版本：**v1.3.1**。直接下载安装包即可使用，无需安装 Rust 或 Node.js。
 
 | 系统 | 下载 | 安装方式 |
 | --- | --- | --- |
-| macOS · Apple Silicon（M 系列） | [ZIP 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-macOS-arm64-v1.3.0.zip) | 解压，将 `米奇.app` 拖入“应用程序”，然后打开 |
-| Windows 10 / 11 · x64 | [EXE 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.0/Mickey-v1.3.0-windows-x86_64-setup.exe) | 运行中文安装向导，安装到当前用户目录；缺少 WebView2 时会下载运行环境 |
+| macOS · Apple Silicon（M 系列） | [ZIP 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-macOS-arm64-v1.3.1.zip) | 解压，将 `米奇.app` 拖入“应用程序”，然后打开 |
+| Windows 10 / 11 · x64 | [EXE 安装包](https://github.com/Zimzheng/meowMickey/releases/download/v1.3.1/Mickey-v1.3.1-windows-x86_64-setup.exe) | 运行中文安装向导，安装到当前用户目录；缺少 WebView2 时会下载运行环境 |
 
 Intel Mac 和 Windows ARM 原生安装包暂未提供。macOS 当前包使用临时签名，尚未经过 Apple 公证；系统可能提示开发者未验证。安装相关问题请附上系统版本到 [Issues](https://github.com/Zimzheng/meowMickey/issues) 反馈。
 
@@ -105,7 +105,7 @@ cargo install tauri-cli --version 2.11.4 --locked
 cargo tauri dev
 ```
 
-开发环境、macOS / Windows 打包命令和验证方式见 [开发指南](docs/DEVELOPMENT.md)。本次功能和验证见 [1.3.0 发布说明](docs/RELEASE_1.3.0.md)。正式发布的签名与双平台清单见 [版本更新说明](docs/UPDATES.md)。
+开发环境、macOS / Windows 打包命令和验证方式见 [开发指南](docs/DEVELOPMENT.md)。本次功能和验证见 [1.3.1 发布说明](docs/RELEASE_1.3.1.md)。正式发布的签名与双平台清单见 [版本更新说明](docs/UPDATES.md)。
 
 | 目录 | 作用 |
 | --- | --- |
